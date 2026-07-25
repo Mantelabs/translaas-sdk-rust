@@ -1,7 +1,8 @@
 //! Official Translaas client SDK for Rust.
 //!
-//! This crate is in foundation scaffolding (`0.0.0`). Public APIs arrive in later
-//! issues. Behavioral parity targets are documented in the umbrella
+//! This crate ships shared models (`translaas::models`) and will add HTTP client,
+//! caching, and service helpers in later releases. Behavioral parity targets are
+//! documented in the umbrella
 //! [implementation plan](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-rust-implementation.md).
 
 #![forbid(unsafe_code)]

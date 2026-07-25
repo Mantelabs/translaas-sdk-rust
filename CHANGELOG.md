@@ -9,5 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::models` module: typed errors, `RequestContext`, request/response DTOs,
+  dual-shape `TranslationGroup`, flexible `TranslationProject`, plural categories,
+  language code constants, and API key validation helpers.
+- Golden JSON fixtures under `testdata/` for models parity with Go/.NET SDKs.
+
+### Added (foundation)
+
 - Repository foundation: crate layout, features map, rustfmt/clippy, justfile,
   GitHub Actions CI (Ubuntu + Windows), and contributor docs.
