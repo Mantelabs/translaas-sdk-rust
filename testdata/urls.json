@@ -1,0 +1,125 @@
+[
+  {
+    "name": "text_minimal",
+    "source": "HttpRequestBuildingTests.BuildGetRequest_ShouldCreateGetRequest",
+    "baseURL": "https://api.test.com",
+    "endpoint": "sdk/v1/translations/text",
+    "requestType": "translation",
+    "request": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en"
+    },
+    "extra": null,
+    "injectN": null,
+    "wantPath": "/sdk/v1/translations/text",
+    "wantQuery": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en"
+    }
+  },
+  {
+    "name": "text_with_number",
+    "source": "HttpRequestBuildingTests.BuildGetRequest_ShouldIncludeRequestModelInQueryString",
+    "baseURL": "https://api.test.com",
+    "endpoint": "sdk/v1/translations/text",
+    "requestType": "translation",
+    "request": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en",
+      "n": 5
+    },
+    "extra": null,
+    "injectN": null,
+    "wantPath": "/sdk/v1/translations/text",
+    "wantQuery": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en",
+      "n": "5"
+    }
+  },
+  {
+    "name": "text_with_encoded_extras",
+    "source": "HttpRequestBuildingTests.BuildGetRequest_ShouldUrlEncodeParameterValues",
+    "baseURL": "https://api.test.com",
+    "endpoint": "sdk/v1/translations/text",
+    "requestType": "translation",
+    "request": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en"
+    },
+    "extra": {
+      "userName": "John Doe",
+      "message": "Hello & Welcome"
+    },
+    "injectN": null,
+    "wantPath": "/sdk/v1/translations/text",
+    "wantQuery": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en",
+      "userName": "John Doe",
+      "message": "Hello & Welcome"
+    }
+  },
+  {
+    "name": "text_get_entry_flow_n_uppercase",
+    "source": "GetEntryAsyncTests.GetEntryAsync_ShouldIncludeNumber_WhenNumberIsProvided",
+    "baseURL": "https://api.test.com",
+    "endpoint": "sdk/v1/translations/text",
+    "requestType": "translation",
+    "request": {
+      "group": "messages",
+      "entry": "greeting",
+      "lang": "en",
+      "n": 5
+    },
+    "extra": {},
+    "injectN": 5,
+    "wantPath": "/sdk/v1/translations/text",
+    "wantQuery": {
+      "group": "messages",
+      "entry": "greeting",
+      "lang": "en",
+      "N": "5"
+    }
+  },
+  {
+    "name": "group_include_context",
+    "source": "porting reference section 5.5",
+    "baseURL": "https://api.test.com",
+    "endpoint": "sdk/v1/translations/group",
+    "requestType": "group",
+    "request": {
+      "project": "proj-1",
+      "group": "ui",
+      "lang": "en",
+      "includeContext": true
+    },
+    "extra": null,
+    "injectN": null,
+    "wantPath": "/sdk/v1/translations/group",
+    "wantQuery": {
+      "project": "proj-1",
+      "group": "ui",
+      "lang": "en",
+      "includeContext": "true"
+    }
+  },
+  {
+    "name": "validate_api_key_path",
+    "source": "TranslaasClient.ValidateApiKeyAsync",
+    "baseURL": "https://api.test.com",
+    "endpoint": "api/v1/api-keys/validate",
+    "requestType": "none",
+    "request": null,
+    "extra": null,
+    "injectN": null,
+    "wantPath": "/api/v1/api-keys/validate",
+    "wantQuery": {}
+  }
+]
