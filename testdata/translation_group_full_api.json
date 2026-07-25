@@ -1,0 +1,12 @@
+{
+  "Project": "my-project",
+  "Lang": "en",
+  "Version": 42,
+  "GeneratedAt": "2026-01-15T12:00:00Z",
+  "Entries": {
+    "welcome": "Welcome"
+  },
+  "entryContext": {
+    "welcome": { "description": "Homepage greeting" }
+  }
+}

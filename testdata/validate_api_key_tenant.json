@@ -1,0 +1,6 @@
+{
+  "isValid": true,
+  "tenantId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "projectIds": ["proj-a", "proj-b"],
+  "defaultProjectId": "proj-a"
+}
