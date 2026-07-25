@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Internal `http` module (crate-private): base URL join/validation, request DTO query
+  encoding, extra-parameter merge, and capital-`N` plural injection for client use in #4.
+- Golden URL/query fixture `testdata/urls.json` aligned with Go `internal/httpx`.
 - `translaas::models` module: typed errors, `RequestContext`, request/response DTOs,
   dual-shape `TranslationGroup`, flexible `TranslationProject`, plural categories,
   language code constants, and API key validation helpers.
