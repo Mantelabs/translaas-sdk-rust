@@ -1,3 +1,10 @@
+# Windows has no `sh` by default; keep Unix on POSIX CI/dev hosts.
+[windows]
+set shell := ["pwsh.exe", "-NoLogo", "-Command"]
+
+[unix]
+set shell := ["sh", "-cu"]
+
 default:
     @just help
 
