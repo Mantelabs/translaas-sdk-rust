@@ -1,4 +1,6 @@
 # Test fixtures
 
-Golden JSON fixtures shared with the .NET and Go SDKs. Copied from `sdk/go/testdata/`
-for models parity (issue #2). HTTP fixtures arrive in later issues.
+Golden JSON fixtures shared with the .NET and Go SDKs.
+
+- Models: copied from `sdk/go/testdata/` (issue #2).
+- URL/query: `urls.json` copied from `sdk/go/internal/httpx/testdata/urls.json` (issue #3).
