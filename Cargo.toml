@@ -2,7 +2,7 @@
 name = "translaas"
 version = "0.0.0"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.86"
 license = "MIT"
 repository = "https://github.com/Mantelabs/translaas-sdk-rust"
 description = "Official Translaas client SDK for Rust"
@@ -19,9 +19,12 @@ axum = ["service"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2"
 url = "2.5.2"
 
 [dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+wiremock = "=0.6.4"

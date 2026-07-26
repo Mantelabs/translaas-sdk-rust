@@ -48,7 +48,7 @@ pub fn resolve_default_project_id(
     if validate
         .project_ids
         .as_ref()
-        .map_or(true, |ids| ids.is_empty())
+        .is_none_or(|ids| ids.is_empty())
     {
         return Err(ConfigurationError {
             message: "Tenant-level API key requires DefaultProjectId in SDK configuration."

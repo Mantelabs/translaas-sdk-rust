@@ -4,8 +4,8 @@ Official Translaas client SDK for Rust (`translaas` on crates.io — **not publi
 
 | | |
 |---|---|
-| **Status** | Foundation scaffold (`0.0.0`) — no HTTP client or public API yet |
-| **MSRV** | Rust **1.80+** |
+| **Status** | Phase 1 client (`0.0.0`) — `Client::get_entry` (reqwest/rustls); caching later |
+| **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
 Part of the [translaas-all](https://github.com/Mantelabs/translaas-all) umbrella workspace (local path `sdk/rust`).
@@ -18,7 +18,26 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issue for this foundation: [Mantelabs/translaas-sdk-rust#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4).
+
+## Quick start (async)
+
+```rust
+use translaas::client::{Client, GetEntryOptions};
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let client = Client::builder()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .base_url("https://api.translaas.local")
+    .build()?;
+
+let text = client
+    .get_entry("ui", "greeting", "en", GetEntryOptions::new())
+    .await?;
+println!("{text}");
+# Ok(())
+# }
+```
 
 ## Cargo features
 
@@ -37,7 +56,7 @@ Tracking issue for this foundation: [Mantelabs/translaas-sdk-rust#1](https://git
 
 ## Development
 
-Requires [Rust](https://rustup.rs/) 1.80+ and optionally [`just`](https://github.com/casey/just).
+Requires [Rust](https://rustup.rs/) 1.86+ and optionally [`just`](https://github.com/casey/just).
 
 ```powershell
 # From sdk/rust (or this repository root)
@@ -73,4 +92,4 @@ Runnable sample apps live in **[translaas-sdk-examples](https://github.com/acuen
 
 ## CI
 
-GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.80.0** in a dedicated job.
+GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.86.0** in a dedicated job.

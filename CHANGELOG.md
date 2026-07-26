@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- MSRV raised to **1.86** (crates.io dependencies now require edition 2024 and ICU 2.2 / Rust ≥ 1.86).
+
 ### Added
 
+- `translaas::client`: `ClientBuilder` / `Client` with `reqwest` + `rustls`, options
+  validation, and async `get_entry` for `GET /sdk/v1/translations/text` (200 / 204 /
+  304, `ApiError` envelope, timeout → 408). No caching in this release slice (#4).
+- Wiremock integration tests for client success, error, and timeout paths.
 - Internal `http` module (crate-private): base URL join/validation, request DTO query
   encoding, extra-parameter merge, and capital-`N` plural injection for client use in #4.
 - Golden URL/query fixture `testdata/urls.json` aligned with Go `internal/httpx`.
