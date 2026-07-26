@@ -27,8 +27,8 @@ url = "2.5.2"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
-wiremock = "0.6"
+wiremock = "=0.6.4"
 
-# MSRV note: keep `quinn-proto` at 0.11.15 in Cargo.lock — 0.11.16+ pulls `rand` 0.10
-# (edition2024), which breaks `cargo` 1.80. Run `cargo update -p quinn-proto --precise 0.11.15`
-# after dependency updates if MSRV CI fails.
+# MSRV note: pin dev/optional stack for Cargo 1.80 — newer releases use edition2024.
+#   wiremock = 0.6.4 (not 0.6.5+)
+#   quinn-proto = 0.11.15 in Cargo.lock (not 0.11.16+ → rand 0.10)
