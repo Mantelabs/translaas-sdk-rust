@@ -2,11 +2,12 @@
 
 use std::time::Duration;
 
+use crate::models::read_json_ulid;
 use crate::models::ConfigurationError;
 use crate::validate::{self, ClientOptions as ValidateOptions};
 
 use super::options::{ClientOptions, DEFAULT_TIMEOUT};
-use super::Client;
+use super::{Client, Error};
 
 /// Builds a validated [`Client`].
 #[derive(Debug, Default)]
@@ -91,5 +92,41 @@ impl ClientBuilder {
             default_project_id,
             http_client,
         })
+    }
+
+    /// Builds a client, optionally calling [`Client::validate_api_key`] when
+    /// `default_project_id` is unset and the key is scoped to a single project.
+    pub async fn build_with_resolved_project(self) -> Result<Client, Error> {
+        if self
+            .options
+            .default_project_id
+            .as_ref()
+            .is_some_and(|value| !value.trim().is_empty())
+        {
+            return self.build().map_err(Error::from);
+        }
+
+        let api_key = self.options.api_key.clone();
+        let base_url = self.options.base_url.clone();
+        let configured_timeout = self.options.timeout;
+        let http_client = self.http_client.clone();
+
+        let client = self.build().map_err(Error::from)?;
+        let validate = client.validate_api_key().await?;
+        let Some(project_id) = validate.project_id.as_ref().and_then(read_json_ulid) else {
+            return Ok(client);
+        };
+
+        let mut builder = ClientBuilder::new()
+            .api_key(api_key)
+            .base_url(base_url)
+            .default_project_id(project_id);
+        if let Some(timeout) = configured_timeout {
+            builder = builder.timeout(timeout);
+        }
+        if let Some(http_client) = http_client {
+            builder = builder.http_client(http_client);
+        }
+        builder.build().map_err(Error::from)
     }
 }

@@ -4,7 +4,7 @@ Official Translaas client SDK for Rust (`translaas` on crates.io — **not publi
 
 | | |
 |---|---|
-| **Status** | Phase 1 client (`0.0.0`) — `Client::get_entry` (reqwest/rustls); caching later |
+| **Status** | Phase 1 client (`0.0.0`) — live HTTP surface (`get_entry`, group/project/locales, offline ZIP, report-missing, validate); caching later |
 | **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
@@ -18,7 +18,7 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5).
 
 ## Quick start (async)
 
