@@ -8,7 +8,7 @@ and the [Go SDK](https://github.com/Mantelabs/translaas-sdk-go).
 ## Getting started
 
 1. Fork and clone the repository (umbrella path: `sdk/rust` under `translaas-all`).
-2. Install **Rust 1.85+** (`rustup`). CI pins MSRV **1.85.0** and also tests on stable.
+2. Install **Rust 1.86+** (`rustup`). CI pins MSRV **1.86.0** and also tests on stable.
 3. Install [`just`](https://github.com/casey/just) for local targets (`cargo install just` or `winget install Casey.Just`).
 4. Create a feature branch: `feature/short-description` or `fix/short-description`.
 

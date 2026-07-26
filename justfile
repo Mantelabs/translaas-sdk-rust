@@ -9,7 +9,7 @@ default:
     @just help
 
 help:
-    @echo "translaas SDK (MSRV 1.85) — targets: fmt, fmt-check, clippy, lint, test, build, coverage, check, clean"
+    @echo "translaas SDK (MSRV 1.86) — targets: fmt, fmt-check, clippy, lint, test, build, coverage, check, clean"
     @echo "Features: cache (default), offline, service, axum"
     @echo "Samples: https://github.com/acuencadev/translaas-sdk-examples (rust/)"
 

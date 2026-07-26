@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- MSRV raised to **1.85** (crates.io dependencies now require edition 2024 / Cargo ≥ 1.85).
+- MSRV raised to **1.86** (crates.io dependencies now require edition 2024 and ICU 2.2 / Rust ≥ 1.86).
 
 ### Added
 
