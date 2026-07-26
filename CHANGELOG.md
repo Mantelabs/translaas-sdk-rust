@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::cache`: `CacheMode`, byte-identical `KeyBuilder` keys, typed `Provider`
+  trait, and thread-safe `MemoryProvider` with absolute/sliding TTL, LRU eviction,
+  and optional statistics (#6).
+- Golden cache key fixtures under `testdata/cache_keys.json` (aligned with Go SDK).
 - `translaas::client`: `TranslaasClient` trait plus `get_group`, `get_project`,
   `get_project_locales`, `get_offline_cache`, `report_missing_keys`, and
   `validate_api_key`; `ClientBuilder::build_with_resolved_project` for single-project
