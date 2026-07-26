@@ -27,4 +27,4 @@ url = "2.5.2"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
-wiremock = "0.6"
+wiremock = "=0.6.4"
