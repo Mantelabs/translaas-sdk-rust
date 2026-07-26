@@ -2,15 +2,20 @@
 
 use std::time::Duration;
 
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT};
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE};
 use reqwest::{Method, Response, StatusCode};
+use serde::de::DeserializeOwned;
 
 use crate::http::build_url;
-use crate::models::{parse_translaas_error, ApiError, ConfigurationError, RequestContext};
+use crate::models::{
+    parse_translaas_error, ApiError, ConfigurationError, ProjectLocales, RequestContext,
+    TranslationGroup, TranslationProject,
+};
 
 use super::Error;
 
 pub(crate) const SDK_TRANSLATIONS_PREFIX: &str = "sdk/v1/translations";
+pub(crate) const VALIDATE_API_KEY_PATH: &str = "api/v1/api-keys/validate";
 pub(crate) const HEADER_API_KEY: &str = "X-Api-Key";
 pub(crate) const HEADER_IF_NONE_MATCH: &str = "If-None-Match";
 
@@ -149,6 +154,164 @@ pub(crate) fn get_method() -> Method {
     Method::GET
 }
 
+pub(crate) fn post_method() -> Method {
+    Method::POST
+}
+
+pub(crate) fn require_non_empty(value: &str, name: &str) -> Result<(), ConfigurationError> {
+    if value.trim().is_empty() {
+        return Err(ConfigurationError {
+            message: format!("{name} is required"),
+        });
+    }
+    Ok(())
+}
+
+pub(crate) fn apply_channel_version(
+    channel: &mut Option<String>,
+    version: &mut Option<String>,
+    ctx: Option<&RequestContext>,
+) {
+    let Some(ctx) = ctx else {
+        return;
+    };
+    if let Some(ref value) = ctx.channel {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            *channel = Some(trimmed.to_string());
+        }
+    }
+    if let Some(ref value) = ctx.version {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            *version = Some(trimmed.to_string());
+        }
+    }
+}
+
+pub(crate) fn apply_snapshot_context(
+    channel: &mut Option<String>,
+    version: &mut Option<String>,
+    include_context: &mut Option<bool>,
+    ctx: Option<&RequestContext>,
+) {
+    apply_channel_version(channel, version, ctx);
+    if let Some(ctx) = ctx {
+        if ctx.include_context.is_some() {
+            *include_context = ctx.include_context;
+        }
+    }
+}
+
+pub(crate) fn decode_json_body<T: DeserializeOwned>(
+    body: &[u8],
+    status_code: u16,
+) -> Result<T, ApiError> {
+    serde_json::from_slice(body).map_err(|err| ApiError {
+        status_code,
+        code: None,
+        message: Some(format!("Failed to decode response body: {err}")),
+        response_content: Some(String::from_utf8_lossy(body).into_owned()),
+    })
+}
+
+pub(crate) fn empty_translation_group() -> TranslationGroup {
+    TranslationGroup::default()
+}
+
+pub(crate) fn empty_translation_project() -> TranslationProject {
+    TranslationProject::default()
+}
+
+pub(crate) fn empty_project_locales() -> ProjectLocales {
+    ProjectLocales {
+        project: None,
+        locales: Vec::new(),
+        last_modified_utc: None,
+    }
+}
+
+pub(crate) fn response_etag(response: &Response) -> Option<String> {
+    response
+        .headers()
+        .get(reqwest::header::ETAG)
+        .and_then(|value| value.to_str().ok())
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
+/// Parses `Content-Disposition` for `filename=` then RFC 5987 `filename*=`.
+pub(crate) fn parse_content_disposition(header: &str) -> Option<String> {
+    if header.is_empty() {
+        return None;
+    }
+
+    let lower = header.to_ascii_lowercase();
+    if let Some(start) = lower.find("filename=") {
+        let value = header[start + "filename=".len()..].trim();
+        let value = value.trim_matches('"');
+        let value = value.split(';').next().unwrap_or(value).trim();
+        if !value.is_empty() && !value.starts_with('*') {
+            return Some(value.to_string());
+        }
+    }
+
+    parse_filename_star(header)
+}
+
+fn parse_filename_star(header: &str) -> Option<String> {
+    let lower = header.to_ascii_lowercase();
+    let prefix = "filename*=";
+    let idx = lower.find(prefix)?;
+    let mut value = header[idx + prefix.len()..].trim();
+    if let Some(semi) = value.find(';') {
+        value = value[..semi].trim();
+    }
+    value = value.trim_matches('"');
+    let parts: Vec<&str> = value.splitn(2, "''").collect();
+    if parts.len() != 2 {
+        return if value.is_empty() {
+            None
+        } else {
+            Some(value.to_string())
+        };
+    }
+    Some(percent_decode(parts[1]))
+}
+
+fn percent_decode(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let bytes = input.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let Ok(decoded) =
+                u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16)
+            {
+                out.push(char::from(decoded));
+                i += 3;
+                continue;
+            }
+        }
+        out.push(char::from(bytes[i]));
+        i += 1;
+    }
+    out
+}
+
+pub(crate) fn json_post_headers(api_key: &str) -> Result<HeaderMap, Error> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        HEADER_API_KEY,
+        HeaderValue::from_str(api_key).map_err(|err| ConfigurationError {
+            message: format!("invalid API key header value: {err}"),
+        })?,
+    );
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+    Ok(headers)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -189,5 +352,33 @@ mod tests {
             err.response_content.as_deref(),
             Some("Internal Server Error")
         );
+    }
+
+    #[test]
+    fn parse_content_disposition_filename() {
+        let got = parse_content_disposition(r#"attachment; filename="bundle.zip""#);
+        assert_eq!(got.as_deref(), Some("bundle.zip"));
+    }
+
+    #[test]
+    fn parse_content_disposition_filename_star() {
+        let got = parse_content_disposition(r#"attachment; filename*=UTF-8''my%20bundle.zip"#);
+        assert_eq!(got.as_deref(), Some("my bundle.zip"));
+    }
+
+    #[test]
+    fn parse_content_disposition_missing() {
+        assert_eq!(parse_content_disposition(""), None);
+    }
+
+    #[test]
+    fn decode_json_body_invalid() {
+        let err = decode_json_body::<TranslationGroup>(b"not-json", 200).unwrap_err();
+        assert_eq!(err.status_code, 200);
+        assert!(err
+            .message
+            .as_deref()
+            .unwrap_or("")
+            .contains("Failed to decode response body"));
     }
 }
