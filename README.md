@@ -5,7 +5,7 @@ Official Translaas client SDK for Rust (`translaas` on crates.io — **not publi
 | | |
 |---|---|
 | **Status** | Phase 1 client (`0.0.0`) — `Client::get_entry` (reqwest/rustls); caching later |
-| **MSRV** | Rust **1.80+** |
+| **MSRV** | Rust **1.85+** |
 | **License** | MIT |
 
 Part of the [translaas-all](https://github.com/Mantelabs/translaas-all) umbrella workspace (local path `sdk/rust`).
@@ -56,7 +56,7 @@ println!("{text}");
 
 ## Development
 
-Requires [Rust](https://rustup.rs/) 1.80+ and optionally [`just`](https://github.com/casey/just).
+Requires [Rust](https://rustup.rs/) 1.85+ and optionally [`just`](https://github.com/casey/just).
 
 ```powershell
 # From sdk/rust (or this repository root)
@@ -92,4 +92,4 @@ Runnable sample apps live in **[translaas-sdk-examples](https://github.com/acuen
 
 ## CI
 
-GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.80.0** in a dedicated job.
+GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.85.0** in a dedicated job.

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- MSRV raised to **1.85** (crates.io dependencies now require edition 2024 / Cargo ≥ 1.85).
+
 ### Added
 
 - `translaas::client`: `ClientBuilder` / `Client` with `reqwest` + `rustls`, options

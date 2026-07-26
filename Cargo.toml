@@ -2,7 +2,7 @@
 name = "translaas"
 version = "0.0.0"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.85"
 license = "MIT"
 repository = "https://github.com/Mantelabs/translaas-sdk-rust"
 description = "Official Translaas client SDK for Rust"
@@ -27,9 +27,4 @@ url = "2.5.2"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
-wiremock = "=0.6.4"
-
-# MSRV note: pin dev/optional stack for Cargo 1.80 — newer releases use edition2024.
-#   wiremock = 0.6.4 (not 0.6.5+)
-#   quinn-proto = 0.11.15 in Cargo.lock (not 0.11.16+ → rand 0.10)
-#   zeroize = 1.8.1 in Cargo.lock (not 1.9+)
+wiremock = "0.6"
