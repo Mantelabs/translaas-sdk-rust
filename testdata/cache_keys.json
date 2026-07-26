@@ -1,0 +1,104 @@
+[
+  {
+    "name": "entry_basic",
+    "method": "entry",
+    "args": {
+      "group": "ui",
+      "entry": "button.save",
+      "lang": "en"
+    },
+    "want": "entry:ui:button.save:en"
+  },
+  {
+    "name": "entry_number",
+    "method": "entry",
+    "args": {
+      "group": "messages",
+      "entry": "item.count",
+      "lang": "en",
+      "number": 5
+    },
+    "want": "entry:messages:item.count:en:5"
+  },
+  {
+    "name": "entry_params",
+    "method": "entry",
+    "args": {
+      "group": "g",
+      "entry": "e",
+      "lang": "en",
+      "parameters": {
+        "Zebra": "1",
+        "foo": "bar"
+      }
+    },
+    "want": "entry:g:e:en:foo=bar:zebra=1"
+  },
+  {
+    "name": "entry_snapshot",
+    "method": "entry",
+    "args": {
+      "group": "g",
+      "entry": "e",
+      "lang": "en",
+      "project": "p1",
+      "channel": "beta",
+      "version": "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+    },
+    "want": "entry:g:e:en:proj=p1:ch=beta:v=01ARZ3NDEKTSV4RRFFQ69G5FAV"
+  },
+  {
+    "name": "group_ic",
+    "method": "group",
+    "args": {
+      "project": "my-project",
+      "group": "ui",
+      "lang": "en",
+      "format": "flat-json",
+      "channel": "stable",
+      "includeContext": true
+    },
+    "want": "group:my-project:ui:en:flat-json:ch=stable:ic=1"
+  },
+  {
+    "name": "group_ic0",
+    "method": "group",
+    "args": {
+      "project": "p",
+      "group": "g",
+      "lang": "en",
+      "includeContext": false
+    },
+    "want": "group:p:g:en:ic=0"
+  },
+  {
+    "name": "project",
+    "method": "project",
+    "args": {
+      "project": "p",
+      "lang": "en",
+      "format": "flat-json",
+      "channel": "c",
+      "version": "1",
+      "includeContext": true
+    },
+    "want": "project:p:en:flat-json:ch=c:v=1:ic=1"
+  },
+  {
+    "name": "locales",
+    "method": "locales",
+    "args": {
+      "project": "proj"
+    },
+    "want": "locales:proj"
+  },
+  {
+    "name": "offline",
+    "method": "offline",
+    "args": {
+      "project": "proj",
+      "includeContext": false
+    },
+    "want": "offline:proj:ic=0"
+  }
+]
