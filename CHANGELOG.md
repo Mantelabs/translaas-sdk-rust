@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::client`: `TranslaasClient` trait plus `get_group`, `get_project`,
+  `get_project_locales`, `get_offline_cache`, `report_missing_keys`, and
+  `validate_api_key`; `ClientBuilder::build_with_resolved_project` for single-project
+  API keys (#5).
+- Wiremock integration tests for JSON read/write endpoints, offline ZIP metadata,
+  bootstrap, and trait delegation.
 - `translaas::client`: `ClientBuilder` / `Client` with `reqwest` + `rustls`, options
   validation, and async `get_entry` for `GET /sdk/v1/translations/text` (200 / 204 /
   304, `ApiError` envelope, timeout → 408). No caching in this release slice (#4).
