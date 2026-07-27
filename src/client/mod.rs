@@ -1,5 +1,8 @@
 //! HTTP client, options validation, and live translation reads.
 
+#[cfg(feature = "cache")]
+mod cache_integration;
+
 mod builder;
 mod error;
 mod get_entry;
@@ -26,7 +29,7 @@ pub use get_project_locales::GetProjectLocalesOptions;
 pub use options::{ClientOptions, DEFAULT_TIMEOUT};
 pub use r#trait::TranslaasClient;
 
-/// Live Translaas HTTP client (no caching).
+/// Live Translaas HTTP client with optional in-memory caching.
 #[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) api_key: String,
@@ -34,6 +37,13 @@ pub struct Client {
     pub(crate) timeout: Duration,
     pub(crate) default_project_id: Option<String>,
     pub(crate) http_client: reqwest::Client,
+    /// Active when [`CacheMode`](crate::cache::CacheMode) is not `None`.
+    #[cfg(feature = "cache")]
+    pub(crate) cache_mode: crate::cache::CacheMode,
+    #[cfg(feature = "cache")]
+    pub(crate) cache_ttl: crate::cache::Ttl,
+    #[cfg(feature = "cache")]
+    pub(crate) cache_provider: Option<std::sync::Arc<crate::cache::MemoryProvider>>,
 }
 
 impl Client {

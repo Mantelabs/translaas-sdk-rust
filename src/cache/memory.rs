@@ -2,6 +2,7 @@
 
 use std::any::Any;
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -37,6 +38,15 @@ pub struct MemoryProvider {
     max_size: usize,
     enable_statistics: bool,
     clock: Arc<dyn Fn() -> Instant + Send + Sync>,
+}
+
+impl fmt::Debug for MemoryProvider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MemoryProvider")
+            .field("max_size", &self.max_size)
+            .field("enable_statistics", &self.enable_statistics)
+            .finish_non_exhaustive()
+    }
 }
 
 struct MemoryState {
