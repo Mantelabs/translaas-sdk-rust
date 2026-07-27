@@ -26,9 +26,14 @@ thiserror = "2"
 url = "2.5.2"
 
 [dev-dependencies]
+tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 wiremock = "=0.6.4"
 
 [[test]]
 name = "client_cache_integration_test"
 required-features = ["cache"]
+
+[[test]]
+name = "cachefile_file_provider_test"
+required-features = ["offline"]
