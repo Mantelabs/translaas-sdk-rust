@@ -13,12 +13,13 @@ categories = ["api-bindings", "internationalization"]
 [features]
 default = ["cache"]
 cache = []
-offline = ["cache"]
+offline = ["cache", "dep:lru"]
 service = []
 axum = ["service"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+lru = { version = "0.12", optional = true }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -36,4 +37,8 @@ required-features = ["cache"]
 
 [[test]]
 name = "cachefile_file_provider_test"
+required-features = ["offline"]
+
+[[test]]
+name = "cachefile_hybrid_provider_test"
 required-features = ["offline"]

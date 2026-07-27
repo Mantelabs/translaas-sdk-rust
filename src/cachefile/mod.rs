@@ -21,18 +21,30 @@
 //! code, prefer [`tokio::task::spawn_blocking`] (or equivalent) to avoid blocking
 //! the runtime.
 //!
-//! Hybrid L1/L2 composition, decorator clients, and background sync arrive in
-//! later issues (#9–#11).
+//! # Hybrid L1-over-L2
+//!
+//! [`HybridProvider`] adds an expirable LRU memory layer (L1) over any L2
+//! [`Provider`] (typically [`FileProvider`]). Defaults: enabled, 30 minute TTL,
+//! 1000 entries per partition. L1 uses the [`lru`](https://docs.rs/lru) crate with
+//! explicit TTL (see [`HybridProvider`] for notes on `moka` / `quick_cache`).
+//!
+//! This is distinct from HTTP in-memory caching in [`crate::cache::MemoryProvider`].
+//!
+//! Decorator clients and background sync arrive in later issues (#10–#11).
 
 #![warn(missing_docs)]
 
 mod atomic;
 mod file_provider;
+mod hybrid_options;
+mod hybrid_provider;
 mod paths;
 mod provider;
 mod types;
 
 pub use file_provider::{FileProvider, FileProviderOptions};
+pub use hybrid_options::HybridOptions;
+pub use hybrid_provider::HybridProvider;
 pub use paths::sanitize_path_segment;
 pub use provider::{Provider, SaveOptions};
 pub use types::{
