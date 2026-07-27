@@ -1,7 +1,7 @@
 //! In-memory caching abstractions for the Translaas SDK.
 //!
 //! Provides [`CacheMode`], byte-identical [`KeyBuilder`] keys, and a thread-safe
-//! [`MemoryProvider`]. Client integration is implemented in a later release (#7).
+//! [`MemoryProvider`]. Wired into [`crate::client::Client`] when the `cache` feature is enabled.
 
 #![warn(missing_docs)]
 

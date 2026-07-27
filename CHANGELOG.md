@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::client`: in-memory cache integration via `CacheMode`, `cache_ttl`, and
+  injectable `MemoryProvider` on `ClientBuilder`; read methods honor the Go/.NET mode
+  matrix; 304 responses fall back to cache without poisoning (#7).
+- Wiremock cache integration tests (hit/miss, 304, TTL expiry, validate passthrough).
 - `translaas::cache`: `CacheMode`, byte-identical `KeyBuilder` keys, typed `Provider`
   trait, and thread-safe `MemoryProvider` with absolute/sliding TTL, LRU eviction,
   and optional statistics (#6).
@@ -25,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bootstrap, and trait delegation.
 - `translaas::client`: `ClientBuilder` / `Client` with `reqwest` + `rustls`, options
   validation, and async `get_entry` for `GET /sdk/v1/translations/text` (200 / 204 /
-  304, `ApiError` envelope, timeout → 408). No caching in this release slice (#4).
+  304, `ApiError` envelope, timeout → 408) (#4).
 - Wiremock integration tests for client success, error, and timeout paths.
 - Internal `http` module (crate-private): base URL join/validation, request DTO query
   encoding, extra-parameter merge, and capital-`N` plural injection for client use in #4.

@@ -2,6 +2,9 @@
 
 use std::time::Duration;
 
+#[cfg(feature = "cache")]
+use crate::cache::{CacheMode, Ttl};
+
 /// Default HTTP timeout when none is configured (`30s`, matching Go/ .NET).
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -18,4 +21,10 @@ pub struct ClientOptions {
     pub timeout: Option<Duration>,
     /// Default `project` query value for text lookups when request context omits it.
     pub default_project_id: Option<String>,
+    /// In-memory cache mode. Default [`CacheMode::None`] disables caching.
+    #[cfg(feature = "cache")]
+    pub cache_mode: CacheMode,
+    /// TTL applied when storing cache entries.
+    #[cfg(feature = "cache")]
+    pub cache_ttl: Ttl,
 }
