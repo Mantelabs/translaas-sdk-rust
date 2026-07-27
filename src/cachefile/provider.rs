@@ -89,3 +89,64 @@ pub trait Provider: Send + Sync {
     /// Removes the entire cache directory tree.
     fn clear(&self) -> Result<(), OfflineCacheError>;
 }
+
+impl<P: Provider + ?Sized> Provider for std::sync::Arc<P> {
+    fn get_project(
+        &self,
+        project: &str,
+        lang: &str,
+    ) -> Result<Option<TranslationProject>, OfflineCacheError> {
+        self.as_ref().get_project(project, lang)
+    }
+
+    fn save_project(
+        &self,
+        project: &str,
+        lang: &str,
+        data: &TranslationProject,
+        options: SaveOptions,
+    ) -> Result<(), OfflineCacheError> {
+        self.as_ref().save_project(project, lang, data, options)
+    }
+
+    fn get_group(
+        &self,
+        project: &str,
+        group: &str,
+        lang: &str,
+    ) -> Result<Option<TranslationGroup>, OfflineCacheError> {
+        self.as_ref().get_group(project, group, lang)
+    }
+
+    fn get_locales(&self, project: &str) -> Result<Option<ProjectLocales>, OfflineCacheError> {
+        self.as_ref().get_locales(project)
+    }
+
+    fn save_locales(
+        &self,
+        project: &str,
+        data: &ProjectLocales,
+        options: SaveOptions,
+    ) -> Result<(), OfflineCacheError> {
+        self.as_ref().save_locales(project, data, options)
+    }
+
+    fn get_manifest(&self) -> Result<Option<CacheManifest>, OfflineCacheError> {
+        self.as_ref().get_manifest()
+    }
+
+    fn update_manifest(
+        &self,
+        update: &mut dyn FnMut(&mut CacheManifest) -> Result<(), OfflineCacheError>,
+    ) -> Result<(), OfflineCacheError> {
+        self.as_ref().update_manifest(update)
+    }
+
+    fn is_cached(&self, project: &str, lang: &str) -> Result<bool, OfflineCacheError> {
+        self.as_ref().is_cached(project, lang)
+    }
+
+    fn clear(&self) -> Result<(), OfflineCacheError> {
+        self.as_ref().clear()
+    }
+}
