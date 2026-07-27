@@ -4,7 +4,7 @@ Official Translaas client SDK for Rust (`translaas` on crates.io — **not publi
 
 | | |
 |---|---|
-| **Status** | Phase 1 client (`0.0.0`) — live HTTP surface (`get_entry`, group/project/locales, offline ZIP, report-missing, validate); caching later |
+| **Status** | Phase 2 client (`0.0.0`) — live HTTP + in-memory `CacheMode` caching |
 | **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
@@ -18,7 +18,34 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7).
+
+## Caching
+
+Configure in-memory caching on [`ClientBuilder`](src/client/builder.rs):
+
+```rust
+use translaas::cache::CacheMode;
+use translaas::client::Client;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let client = Client::builder()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .base_url("https://api.translaas.local")
+    .cache_mode(CacheMode::Group) // recommended default in Go/.NET
+    .build()?;
+# Ok(())
+# }
+```
+
+| `CacheMode` | Caches |
+|-------------|--------|
+| `None` | Nothing (default) |
+| `Entry` | `get_entry` + `get_project_locales` |
+| `Group` | `get_group` + `get_project_locales` |
+| `Project` | `get_group`, `get_project`, + `get_project_locales` |
+
+304 responses fall back to cached values when a provider is configured; empty 304 bodies never overwrite cache entries.
 
 ## Quick start (async)
 
