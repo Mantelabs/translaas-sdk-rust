@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::cachefile::HybridProvider`: expirable LRU memory L1 over any L2
+  `Provider` with promotion on read, dual-write on save, warmup, and stats (#9).
+  L1 uses the `lru` crate with explicit TTL; `moka` and `quick_cache` were
+  evaluated (documented on `HybridProvider`).
+- Hybrid provider integration tests (promotion, TTL, LRU, concurrency, FileProvider).
 - `translaas::cachefile`: `FileProvider` on-disk offline cache with JSON wrappers,
   root `manifest.json`, path sanitization, atomic `*.tmp` writes, expiration-as-miss,
   and corrupt JSON → `OfflineCacheError` (#8).

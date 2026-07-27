@@ -18,7 +18,7 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9).
 
 ## Caching
 
@@ -89,6 +89,29 @@ On-disk layout:
 ```
 
 Expired wrapper entries are treated as misses; corrupt JSON returns `OfflineCacheError`.
+
+### Hybrid L1-over-L2
+
+Wrap [`FileProvider`] with [`HybridProvider`] for an in-memory L1 (TTL + LRU per partition) over disk L2. Defaults: enabled, 30 minute TTL, 1000 entries per partition. L1 uses the [`lru`](https://docs.rs/lru) crate with explicit expiry (see [`HybridProvider`](src/cachefile/hybrid_provider.rs) rustdoc for notes on `moka` / `quick_cache` evaluation).
+
+This is separate from HTTP in-memory caching in [`cache::MemoryProvider`](src/cache/memory.rs).
+
+```rust
+use translaas::cachefile::{FileProvider, HybridOptions, HybridProvider, Provider, SaveOptions};
+
+# fn example() -> Result<(), Box<dyn std::error::Error>> {
+let file = FileProvider::new(".translaas-cache")?;
+let provider = HybridProvider::new(file, HybridOptions::default());
+
+provider.save_project("demo-project", "en", &translation_project, SaveOptions::new())?;
+
+// Second read hits L1 without disk I/O.
+let _ = provider.get_project("demo-project", "en")?;
+
+provider.clear_memory_cache(); // L2 unchanged
+# Ok(())
+# }
+```
 
 ## Quick start (async)
 
