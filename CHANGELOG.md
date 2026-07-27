@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::cachefile`: `FileProvider` on-disk offline cache with JSON wrappers,
+  root `manifest.json`, path sanitization, atomic `*.tmp` writes, expiration-as-miss,
+  and corrupt JSON → `OfflineCacheError` (#8).
+- Offline file provider integration tests (round-trip, expiry, manifest fallbacks).
 - `translaas::client`: in-memory cache integration via `CacheMode`, `cache_ttl`, and
   injectable `MemoryProvider` on `ClientBuilder`; read methods honor the Go/.NET mode
   matrix; 304 responses fall back to cache without poisoning (#7).

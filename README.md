@@ -4,7 +4,7 @@ Official Translaas client SDK for Rust (`translaas` on crates.io — **not publi
 
 | | |
 |---|---|
-| **Status** | Phase 2 client (`0.0.0`) — live HTTP + in-memory `CacheMode` caching |
+| **Status** | Phase 2 client (`0.0.0`) — live HTTP, in-memory cache, offline file cache |
 | **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
@@ -18,7 +18,7 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8).
 
 ## Caching
 
@@ -46,6 +46,49 @@ let client = Client::builder()
 | `Project` | `get_group`, `get_project`, + `get_project_locales` |
 
 304 responses fall back to cached values when a provider is configured; empty 304 bodies never overwrite cache entries.
+
+## Offline file cache
+
+Enable the `offline` feature for on-disk caching (`translaas::cachefile`). Disk I/O is synchronous — use `tokio::task::spawn_blocking` from async code when needed.
+
+```toml
+[dependencies]
+translaas = { version = "0.1", features = ["offline"] }
+```
+
+```rust
+use translaas::cachefile::{FileProvider, Provider, SaveOptions};
+
+# fn example() -> Result<(), Box<dyn std::error::Error>> {
+let provider = FileProvider::new(".translaas-cache")?;
+
+provider.save_project(
+    "demo-project",
+    "en",
+    &translation_project,
+    SaveOptions::new(),
+)?;
+
+if let Some(project) = provider.get_project("demo-project", "en")? {
+    // use cached project payload
+    let _group = project.get_group("common")?;
+}
+# Ok(())
+# }
+```
+
+On-disk layout:
+
+```text
+{CacheDirectory}/
+├── manifest.json
+└── {sanitizedProjectId}/
+    ├── locales.json
+    └── {sanitizedLang}/
+        └── project.json
+```
+
+Expired wrapper entries are treated as misses; corrupt JSON returns `OfflineCacheError`.
 
 ## Quick start (async)
 
