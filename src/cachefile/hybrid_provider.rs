@@ -111,11 +111,7 @@ impl HybridL1 {
     }
 
     fn stats(&self) -> (usize, usize, usize) {
-        (
-            self.projects.len(),
-            self.groups.len(),
-            self.locales.len(),
-        )
+        (self.projects.len(), self.groups.len(), self.locales.len())
     }
 }
 
@@ -156,10 +152,7 @@ impl<L2: Provider> HybridProvider<L2> {
 
     /// Returns current L1 entry counts: `(projects, groups, locales)`.
     pub fn memory_cache_stats(&self) -> (usize, usize, usize) {
-        self.l1
-            .as_ref()
-            .map(HybridL1::stats)
-            .unwrap_or((0, 0, 0))
+        self.l1.as_ref().map(HybridL1::stats).unwrap_or((0, 0, 0))
     }
 
     /// Loads project data from L2 into L1. Returns `Ok(false)` on L2 miss.
@@ -222,10 +215,8 @@ impl<L2: Provider> Provider for HybridProvider<L2> {
 
         let result = self.l2.get_project(project, lang)?;
         if let (Some(l1), Some(data)) = (&self.l1, &result) {
-            l1.projects.insert(
-                project_cache_key(project, lang),
-                Arc::new(data.clone()),
-            );
+            l1.projects
+                .insert(project_cache_key(project, lang), Arc::new(data.clone()));
         }
         Ok(result)
     }
@@ -238,10 +229,8 @@ impl<L2: Provider> Provider for HybridProvider<L2> {
         options: SaveOptions,
     ) -> Result<(), OfflineCacheError> {
         if let Some(l1) = &self.l1 {
-            l1.projects.insert(
-                project_cache_key(project, lang),
-                Arc::new(data.clone()),
-            );
+            l1.projects
+                .insert(project_cache_key(project, lang), Arc::new(data.clone()));
             self.cache_project_groups_l1(project, lang, data);
         }
         self.l2.save_project(project, lang, data, options)
@@ -323,20 +312,13 @@ impl<L2: Provider> Provider for HybridProvider<L2> {
     }
 }
 
-fn cache_project_groups_l1(
-    l1: &HybridL1,
-    project: &str,
-    lang: &str,
-    data: &TranslationProject,
-) {
+fn cache_project_groups_l1(l1: &HybridL1, project: &str, lang: &str, data: &TranslationProject) {
     for name in data.groups.keys() {
         let Ok(Some(group)) = data.get_group(name) else {
             continue;
         };
-        l1.groups.insert(
-            group_cache_key(project, name, lang),
-            Arc::new(group),
-        );
+        l1.groups
+            .insert(group_cache_key(project, name, lang), Arc::new(group));
     }
 }
 

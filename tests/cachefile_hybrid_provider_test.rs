@@ -7,9 +7,7 @@ use std::thread;
 use std::time::Duration;
 
 use serde_json::json;
-use translaas::cachefile::{
-    FileProvider, HybridOptions, HybridProvider, Provider, SaveOptions,
-};
+use translaas::cachefile::{FileProvider, HybridOptions, HybridProvider, Provider, SaveOptions};
 use translaas::models::{OfflineCacheError, ProjectLocales, TranslationGroup, TranslationProject};
 
 struct MockL2Provider {
@@ -340,7 +338,12 @@ fn hybrid_provider_integration_with_file_provider() {
     let provider = HybridProvider::new(file_provider, HybridOptions::default());
 
     provider
-        .save_project("demo", "en", &test_project("integration"), SaveOptions::new())
+        .save_project(
+            "demo",
+            "en",
+            &test_project("integration"),
+            SaveOptions::new(),
+        )
         .expect("save");
 
     let got = provider
