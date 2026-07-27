@@ -8,6 +8,9 @@ use url::Url;
 use crate::http::{append_query_values, inject_plural_n, merge_query_params};
 use crate::models::{ConfigurationError, GetTranslationRequest, RequestContext};
 
+#[cfg(feature = "cache")]
+use super::cache_integration::build_entry_cache_key;
+
 use super::transport::{
     assign_response_context, classify_reqwest_error, default_headers, endpoint_url, get_method,
     handle_api_error, map_transport_failure, SDK_TRANSLATIONS_PREFIX,
@@ -72,6 +75,28 @@ impl Client {
             ctx.reset();
         }
 
+        #[cfg(feature = "cache")]
+        let cache_key = if self.caching_enabled("entry") {
+            Some(build_entry_cache_key(
+                group,
+                entry,
+                lang,
+                opts.number,
+                &opts.parameters,
+                opts.request_context.as_deref(),
+                self.default_project_id.as_deref(),
+            ))
+        } else {
+            None
+        };
+
+        #[cfg(feature = "cache")]
+        if let Some(ref key) = cache_key {
+            if let Some(cached) = self.try_cache_get_string(key) {
+                return Ok(cached);
+            }
+        }
+
         let project = resolve_entry_project(
             opts.request_context.as_deref(),
             self.default_project_id.as_deref(),
@@ -126,6 +151,10 @@ impl Client {
                 let body = response.text().await.map_err(|err| {
                     map_transport_failure(classify_reqwest_error(&err), self.timeout)
                 })?;
+                #[cfg(feature = "cache")]
+                if let Some(ref key) = cache_key {
+                    self.cache_set_string(key, &body);
+                }
                 Ok(body)
             }
             StatusCode::NO_CONTENT => {
@@ -134,6 +163,14 @@ impl Client {
             }
             StatusCode::NOT_MODIFIED => {
                 assign_response_context(&response, opts.request_context.as_deref_mut(), true);
+                #[cfg(feature = "cache")]
+                if self.has_cache_provider() {
+                    if let Some(ref key) = cache_key {
+                        if let Some(cached) = self.try_cache_get_string(key) {
+                            return Ok(cached);
+                        }
+                    }
+                }
                 Ok(String::new())
             }
             status => {
@@ -158,16 +195,28 @@ fn resolve_entry_project(
     ctx: Option<&RequestContext>,
     default_project_id: Option<&str>,
 ) -> Option<String> {
-    if let Some(ctx) = ctx {
-        if let Some(ref project) = ctx.project {
-            let trimmed = project.trim();
-            if !trimmed.is_empty() {
-                return Some(trimmed.to_string());
-            }
+    #[cfg(feature = "cache")]
+    {
+        let project = super::cache_integration::resolve_entry_project(ctx, default_project_id);
+        if project.is_empty() {
+            None
+        } else {
+            Some(project.to_string())
         }
     }
-    default_project_id
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(ToOwned::to_owned)
+    #[cfg(not(feature = "cache"))]
+    {
+        if let Some(ctx) = ctx {
+            if let Some(ref project) = ctx.project {
+                let trimmed = project.trim();
+                if !trimmed.is_empty() {
+                    return Some(trimmed.to_string());
+                }
+            }
+        }
+        default_project_id
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
 }

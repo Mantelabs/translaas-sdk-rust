@@ -2,6 +2,9 @@
 
 use crate::models::{GetGroupTranslationsRequest, RequestContext, TranslationGroup};
 
+#[cfg(feature = "cache")]
+use crate::cache::KeyBuilder;
+
 use super::json_get::execute_json_get;
 use super::transport::{apply_snapshot_context, empty_translation_group, require_non_empty};
 use super::{Client, Error};
@@ -67,13 +70,54 @@ impl Client {
             opts.request_context.as_deref(),
         );
 
+        let (cache_op, cache_key) =
+            group_cache_context(self, project, group, lang, &opts, &req_model);
+
         execute_json_get(
             self,
             "group",
             &req_model,
             opts.request_context.as_deref_mut(),
             empty_translation_group,
+            cache_op,
+            cache_key.as_deref(),
         )
         .await
     }
+}
+
+#[cfg(feature = "cache")]
+fn group_cache_context(
+    client: &Client,
+    project: &str,
+    group: &str,
+    lang: &str,
+    opts: &GetGroupOptions<'_>,
+    req_model: &GetGroupTranslationsRequest,
+) -> (Option<&'static str>, Option<String>) {
+    if !client.caching_enabled("group") {
+        return (None, None);
+    }
+    let key = KeyBuilder.group_key(
+        project,
+        group,
+        lang,
+        opts.format.as_deref().unwrap_or(""),
+        req_model.channel.as_deref().unwrap_or(""),
+        req_model.version.as_deref().unwrap_or(""),
+        req_model.include_context,
+    );
+    (Some("group"), Some(key))
+}
+
+#[cfg(not(feature = "cache"))]
+fn group_cache_context(
+    _client: &Client,
+    _project: &str,
+    _group: &str,
+    _lang: &str,
+    _opts: &GetGroupOptions<'_>,
+    _req_model: &GetGroupTranslationsRequest,
+) -> (Option<&'static str>, Option<String>) {
+    (None, None)
 }

@@ -2,6 +2,9 @@
 
 use crate::models::{GetProjectTranslationsRequest, RequestContext, TranslationProject};
 
+#[cfg(feature = "cache")]
+use crate::cache::KeyBuilder;
+
 use super::json_get::execute_json_get;
 use super::transport::{apply_snapshot_context, empty_translation_project, require_non_empty};
 use super::{Client, Error};
@@ -64,13 +67,50 @@ impl Client {
             opts.request_context.as_deref(),
         );
 
+        let (cache_op, cache_key) = project_cache_context(self, project, lang, &opts, &req_model);
+
         execute_json_get(
             self,
             "project",
             &req_model,
             opts.request_context.as_deref_mut(),
             empty_translation_project,
+            cache_op,
+            cache_key.as_deref(),
         )
         .await
     }
+}
+
+#[cfg(feature = "cache")]
+fn project_cache_context(
+    client: &Client,
+    project: &str,
+    lang: &str,
+    opts: &GetProjectOptions<'_>,
+    req_model: &GetProjectTranslationsRequest,
+) -> (Option<&'static str>, Option<String>) {
+    if !client.caching_enabled("project") {
+        return (None, None);
+    }
+    let key = KeyBuilder.project_key(
+        project,
+        lang,
+        opts.format.as_deref().unwrap_or(""),
+        req_model.channel.as_deref().unwrap_or(""),
+        req_model.version.as_deref().unwrap_or(""),
+        req_model.include_context,
+    );
+    (Some("project"), Some(key))
+}
+
+#[cfg(not(feature = "cache"))]
+fn project_cache_context(
+    _client: &Client,
+    _project: &str,
+    _lang: &str,
+    _opts: &GetProjectOptions<'_>,
+    _req_model: &GetProjectTranslationsRequest,
+) -> (Option<&'static str>, Option<String>) {
+    (None, None)
 }

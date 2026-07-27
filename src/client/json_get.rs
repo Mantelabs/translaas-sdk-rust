@@ -20,11 +20,22 @@ pub(crate) async fn execute_json_get<T, F>(
     query_model: &impl Serialize,
     ctx: Option<&mut RequestContext>,
     empty: F,
+    cache_op: Option<&str>,
+    cache_key: Option<&str>,
 ) -> Result<T, Error>
 where
-    T: DeserializeOwned,
+    T: DeserializeOwned + Clone + Send + Sync + 'static,
     F: FnOnce() -> T,
 {
+    #[cfg(feature = "cache")]
+    if let (Some(op), Some(key)) = (cache_op, cache_key) {
+        if client.caching_enabled(op) {
+            if let Some(cached) = client.try_cache_get::<T>(key) {
+                return Ok(cached);
+            }
+        }
+    }
+
     let raw_url = endpoint_url(
         &client.base_url,
         &format!("{SDK_TRANSLATIONS_PREFIX}/{path_suffix}"),
@@ -50,28 +61,36 @@ where
         }
     };
 
-    handle_json_response(response, ctx, empty, client.timeout).await
+    handle_json_response(response, ctx, empty, client, cache_op, cache_key).await
 }
 
 async fn handle_json_response<T, F>(
     response: reqwest::Response,
     ctx: Option<&mut RequestContext>,
     empty: F,
-    timeout: std::time::Duration,
+    client: &Client,
+    #[cfg_attr(not(feature = "cache"), allow(unused_variables))] cache_op: Option<&str>,
+    #[cfg_attr(not(feature = "cache"), allow(unused_variables))] cache_key: Option<&str>,
 ) -> Result<T, Error>
 where
-    T: DeserializeOwned,
+    T: DeserializeOwned + Clone + Send + Sync + 'static,
     F: FnOnce() -> T,
 {
     match response.status() {
         StatusCode::OK => {
             assign_response_context(&response, ctx, false);
             let status_code = response.status().as_u16();
-            let body = response
-                .bytes()
-                .await
-                .map_err(|err| map_transport_failure(classify_reqwest_error(&err), timeout))?;
-            decode_json_body(&body, status_code).map_err(Error::Api)
+            let body = response.bytes().await.map_err(|err| {
+                map_transport_failure(classify_reqwest_error(&err), client.timeout)
+            })?;
+            let decoded: T = decode_json_body(&body, status_code).map_err(Error::Api)?;
+            #[cfg(feature = "cache")]
+            if let (Some(op), Some(key)) = (cache_op, cache_key) {
+                if client.caching_enabled(op) {
+                    client.cache_set(key, decoded.clone());
+                }
+            }
+            Ok(decoded)
         }
         StatusCode::NO_CONTENT => {
             assign_response_context(&response, ctx, false);
@@ -79,6 +98,14 @@ where
         }
         StatusCode::NOT_MODIFIED => {
             assign_response_context(&response, ctx, true);
+            #[cfg(feature = "cache")]
+            if client.has_cache_provider() {
+                if let Some(key) = cache_key {
+                    if let Some(cached) = client.try_cache_get::<T>(key) {
+                        return Ok(cached);
+                    }
+                }
+            }
             Ok(empty())
         }
         status => {

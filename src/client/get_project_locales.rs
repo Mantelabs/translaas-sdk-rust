@@ -2,6 +2,9 @@
 
 use crate::models::{GetProjectLocalesRequest, ProjectLocales, RequestContext};
 
+#[cfg(feature = "cache")]
+use crate::cache::KeyBuilder;
+
 use super::json_get::execute_json_get;
 use super::transport::{apply_channel_version, empty_project_locales, require_non_empty};
 use super::{Client, Error};
@@ -50,13 +53,43 @@ impl Client {
             opts.request_context.as_deref(),
         );
 
+        let (cache_op, cache_key) = locales_cache_context(self, project, &req_model);
+
         execute_json_get(
             self,
             "locales",
             &req_model,
             opts.request_context.as_deref_mut(),
             empty_project_locales,
+            cache_op,
+            cache_key.as_deref(),
         )
         .await
     }
+}
+
+#[cfg(feature = "cache")]
+fn locales_cache_context(
+    client: &Client,
+    project: &str,
+    req_model: &GetProjectLocalesRequest,
+) -> (Option<&'static str>, Option<String>) {
+    if !client.caching_enabled("locales") {
+        return (None, None);
+    }
+    let key = KeyBuilder.locales_key(
+        project,
+        req_model.channel.as_deref().unwrap_or(""),
+        req_model.version.as_deref().unwrap_or(""),
+    );
+    (Some("locales"), Some(key))
+}
+
+#[cfg(not(feature = "cache"))]
+fn locales_cache_context(
+    _client: &Client,
+    _project: &str,
+    _req_model: &GetProjectLocalesRequest,
+) -> (Option<&'static str>, Option<String>) {
+    (None, None)
 }
