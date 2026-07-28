@@ -42,3 +42,7 @@ required-features = ["offline"]
 [[test]]
 name = "cachefile_hybrid_provider_test"
 required-features = ["offline"]
+
+[[test]]
+name = "cachefile_caching_client_test"
+required-features = ["offline"]

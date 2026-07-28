@@ -18,7 +18,7 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9), offline decorator [#10](https://github.com/Mantelabs/translaas-sdk-rust/issues/10).
 
 ## Caching
 
@@ -109,6 +109,72 @@ provider.save_project("demo-project", "en", &translation_project, SaveOptions::n
 let _ = provider.get_project("demo-project", "en")?;
 
 provider.clear_memory_cache(); // L2 unchanged
+# Ok(())
+# }
+```
+
+### Offline decorator (`CachingClient`)
+
+Wrap a live [`Client`](src/client/mod.rs) (or any [`TranslaasClient`](src/client/trait.rs)) with [`CachingClient`](src/cachefile/caching_client.rs) for disk-first / API-first / cache-only reads:
+
+```rust
+use translaas::cachefile::{
+    CachingClient, CachingOptions, FallbackMode, FileProvider, HybridOptions, HybridProvider,
+};
+use translaas::client::Client;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let inner = Client::builder()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .default_project_id("demo-project")
+    .build()?;
+
+let cache = HybridProvider::new(
+    FileProvider::new(".translaas-cache")?,
+    HybridOptions::default(),
+);
+
+let client = CachingClient::new(
+    inner,
+    cache,
+    CachingOptions {
+        fallback_mode: FallbackMode::CacheFirst,
+        default_project_id: "demo-project".into(),
+    },
+)?;
+
+let text = client
+    .get_entry("common", "hello", "en", translaas::client::GetEntryOptions::new())
+    .await?;
+# Ok(())
+# }
+```
+
+| `FallbackMode` | Order |
+|----------------|--------|
+| `CacheFirst` (default) | Disk → API on miss |
+| `ApiFirst` | API → disk on network/API errors |
+| `CacheOnly` | Disk only |
+
+Intercepted reads: `get_entry`, `get_group`, `get_project`, `get_project_locales`. Passthrough (always inner): `get_offline_cache`, `report_missing_keys`, `validate_api_key`.
+
+Offline entry resolution uses simplified plural rules (`n == 1` → `One`, else `Other`) and `{param}` substitution — not full CLDR parity with the live API.
+
+For **keyless offline-only** deployments, pair `FallbackMode::CacheOnly` with [`OfflineStubClient`](src/cachefile/offline_stub.rs) after seeding disk:
+
+```rust
+use translaas::cachefile::{CachingClient, CachingOptions, FallbackMode, FileProvider, OfflineStubClient};
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let cache = FileProvider::new(".translaas-cache")?;
+let client = CachingClient::new(
+    OfflineStubClient::new(),
+    cache,
+    CachingOptions {
+        fallback_mode: FallbackMode::CacheOnly,
+        default_project_id: "demo-project".into(),
+    },
+)?;
 # Ok(())
 # }
 ```

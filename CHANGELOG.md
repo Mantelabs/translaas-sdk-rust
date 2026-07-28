@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::cachefile::CachingClient`: offline decorator with `CacheFirst`, `ApiFirst`, and
+  `CacheOnly` fallback modes; offline plural + placeholder resolution; group cache warm after
+  API entry reads; `OfflineStubClient` for keyless `CacheOnly` (#10).
+- CachingClient integration tests (mock + FileProvider, fault injection, concurrent reads).
 - `translaas::cachefile::HybridProvider`: expirable LRU memory L1 over any L2
   `Provider` with promotion on read, dual-write on save, warmup, and stats (#9).
   L1 uses the `lru` crate with explicit TTL; `moka` and `quick_cache` were
