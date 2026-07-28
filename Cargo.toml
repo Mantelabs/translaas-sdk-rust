@@ -15,7 +15,7 @@ default = ["cache"]
 cache = []
 offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util"]
 service = []
-axum = ["service"]
+axum = ["service", "dep:axum"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
@@ -27,11 +27,15 @@ thiserror = "2"
 tokio = { version = "1", optional = true, features = ["time", "sync", "rt", "macros"] }
 tokio-util = { version = "0.7", optional = true }
 url = "2.5.2"
+axum = { version = "0.8", optional = true, default-features = false, features = ["matched-path", "query"] }
 
 [dev-dependencies]
 tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 wiremock = "=0.6.4"
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+http-body-util = "0.1"
 
 [[test]]
 name = "client_cache_integration_test"
@@ -56,3 +60,7 @@ required-features = ["offline"]
 [[test]]
 name = "service_test"
 required-features = ["service"]
+
+[[test]]
+name = "axum_test"
+required-features = ["axum"]
