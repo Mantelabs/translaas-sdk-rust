@@ -93,10 +93,7 @@ mod tests {
             _ctx: &LanguageContext,
         ) -> Result<Option<String>, LanguageProviderError> {
             if self.fail {
-                return Err(LanguageProviderError::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "boom",
-                )));
+                return Err(LanguageProviderError::new(std::io::Error::other("boom")));
             }
             Ok(if self.lang.is_empty() {
                 None

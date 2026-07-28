@@ -6,7 +6,7 @@
 //! # Quick start
 //!
 //! ```no_run
-//! # async fn example() -> Result<(), translaas::service::Error> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! use translaas::client::{Client, ClientBuilder};
 //! use translaas::service::{
 //!     DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
