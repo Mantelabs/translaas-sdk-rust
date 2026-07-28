@@ -18,7 +18,7 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9), offline decorator [#10](https://github.com/Mantelabs/translaas-sdk-rust/issues/10), sync service [#11](https://github.com/Mantelabs/translaas-sdk-rust/issues/11).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9), offline decorator [#10](https://github.com/Mantelabs/translaas-sdk-rust/issues/10), sync service [#11](https://github.com/Mantelabs/translaas-sdk-rust/issues/11), convenience `t()` API [#12](https://github.com/Mantelabs/translaas-sdk-rust/issues/12).
 
 ## Caching
 
@@ -217,6 +217,55 @@ svc.start_background_sync(cancel.clone());
 [`OfflineCacheOptions`](src/cachefile/offline_cache_options.rs) is the umbrella config (Go / .NET §4.3). Derive [`CachingOptions`](src/cachefile/caching_options.rs) via `opts.caching_options()?` when wrapping the same inner client for reads.
 
 Optional callbacks (`SyncCallbacks`) mirror Go hooks; adapt to channels by forwarding [`SyncEvent`](src/cachefile/sync_events.rs) variants from `on_sync_*` handlers.
+
+### Convenience `t()` API (`service`)
+
+Enable the `service` feature for a thin wrapper over `get_entry` with automatic language resolution:
+
+```toml
+[dependencies]
+translaas = { version = "0.1", features = ["service"] }
+```
+
+```rust
+use translaas::client::{Client, ClientBuilder};
+use translaas::service::{
+    DefaultLanguageProvider, LanguageContext, LanguageResolver, Service, ServiceOptions,
+    TOptions,
+};
+
+# async fn example() -> Result<(), translaas::service::Error> {
+let client = ClientBuilder::new()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .default_project_id("demo-project")
+    .build()?;
+
+let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
+let service = Service::new(client, ServiceOptions {
+    resolver: Some(resolver),
+});
+
+// Explicit language bypasses the resolver chain.
+let text = service
+    .t("common", "welcome", TOptions::new().lang("de"))
+    .await?;
+
+// Automatic resolution uses LanguageContext (Axum #13 will populate this per request).
+let text = service
+    .t(
+        "common",
+        "welcome",
+        TOptions::new().language_context(LanguageContext::new().with_language("pt")),
+    )
+    .await?;
+# let _ = text;
+# Ok(())
+# }
+```
+
+When no resolver is configured and no explicit language is set, `t()` returns [`NoLanguageError`](src/models/errors.rs) — never an HTTP/API error. Provider failures in the chain are skipped silently (Go logs warnings; Rust has no logging dependency on `service`).
+
+Context cancellation before resolve (`context.Canceled` parity) is deferred until the client exposes an explicit cancel handle on `get_entry`.
 
 ## Quick start (async)
 

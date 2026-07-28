@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::service`: convenience `t()` API with `LanguageResolver`, built-in language
+  providers (`DefaultLanguageProvider`, `ContextLanguageProvider`, `AcceptLanguageProvider`),
+  `LanguageContext`, and `with_prepended_providers` (#12).
+- Service integration tests (Go-parity mock matrix for resolver order, explicit lang bypass,
+  option forwarding, prepend).
 - `translaas::cachefile::SyncService`: offline cache synchronization with inner
   client, language filter, sync-all partial aggregation, optional background sync
   (`start_background_sync` / `stop_background_sync`), and `SyncCallbacks` hooks (#11).
