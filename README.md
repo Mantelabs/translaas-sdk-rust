@@ -351,6 +351,7 @@ println!("{text}");
 | `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache` |
 | `service` | no | Convenience `t()` helper (`translaas::service`) |
 | `axum` | no | Axum extractors / helpers; implies `service` |
+| `integration` | no | **Test-only** — live API integration harness (`make test-integration`) |
 
 ```toml
 # Coming in M1 — do not publish consumers against 0.0.0 yet
@@ -366,7 +367,10 @@ Requires [Rust](https://rustup.rs/) 1.86+ and optionally [`just`](https://github
 # From sdk/rust (or this repository root)
 just help
 just check          # fmt-check + clippy + test + build
+make test-integration   # live API (requires TRANSLAAS_API_KEY)
 ```
+
+Live integration setup: [`tests/integration/README.md`](./tests/integration/README.md).
 
 Equivalent `cargo` commands (what CI runs):
 
@@ -374,7 +378,7 @@ Equivalent `cargo` commands (what CI runs):
 cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --workspace
-cargo test --workspace --all-features
+cargo test --workspace --features cache,offline,service,axum
 cargo test --workspace --no-default-features
 cargo build --workspace --all-features
 ```

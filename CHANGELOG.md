@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Live API integration tests under `tests/integration/` (env-gated via `TRANSLAAS_API_KEY`, `integration` Cargo feature) (#14).
+- `make test-integration` target and optional `integration.yml` GitHub Actions workflow for manual runs.
 - `translaas::axum`: optional Axum middleware, request language provider, and `Translaas`
   extractor (#13). README documents XSS posture (translations are not HTML-escaped).
 - Axum integration tests (Go `web` parity for query/Accept-Language/cookie sources,

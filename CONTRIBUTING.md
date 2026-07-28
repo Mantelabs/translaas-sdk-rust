@@ -29,7 +29,7 @@ just check
 | `src/cachefile/` | Offline file cache and sync | `offline` |
 | `src/service/` | Convenience `t()` API | `service` |
 | `src/axum/` | Optional Axum helpers | `axum` |
-| `tests/` | Crate-level tests | smoke now; live API later |
+| `tests/` | Crate-level tests (wiremock + live API under `tests/integration/`) | smoke + integration |
 | `testdata/` | Golden fixtures | later issues |
 
 Runnable sample apps live in **[translaas-sdk-examples](https://github.com/acuencadev/translaas-sdk-examples)** (`rust/`), not here.
@@ -42,7 +42,7 @@ See the [implementation plan](https://github.com/Mantelabs/translaas-all/blob/ma
 
 - Prefer tests before or alongside implementation for non-trivial behavior.
 - Run `just test` (or the `cargo test` matrix in the README).
-- Default CI does **not** call live Translaas APIs.
+- Default CI does **not** call live Translaas APIs. Use `make test-integration` with `TRANSLAAS_API_KEY` for live checks (see `tests/integration/README.md`).
 
 ### Rust conventions
 

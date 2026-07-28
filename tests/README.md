@@ -1,7 +1,7 @@
 # Integration-style tests
 
-Foundation smoke tests live in `scaffold_test.rs`.
+Wiremock and in-process integration tests live in this directory (`*_test.rs`).
 
-Live API / behavioral integration tests are tracked in
-[issue #14](https://github.com/Mantelabs/translaas-sdk-rust/issues/14) and will
-land under this directory later. Default CI does not hit the network.
+**Live API** tests are feature-gated under [`integration/`](./integration/README.md) (issue [#14](https://github.com/Mantelabs/translaas-sdk-rust/issues/14)). Run them with `make test-integration` when `TRANSLAAS_API_KEY` is set.
+
+Default `cargo test` / `just test` / PR CI do **not** hit the network.
