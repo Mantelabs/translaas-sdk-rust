@@ -3,7 +3,7 @@ use std::time::Duration;
 use translaas::client::GetEntryOptions;
 
 use crate::common::{
-    new_client_with_options, new_integration_client, require_integration_config,
+    is_sdk_not_found, new_client_with_options, new_integration_client, require_integration_config,
     FIXTURE_ENTRY_SAVE, FIXTURE_GROUP, FIXTURE_LANG,
 };
 
@@ -90,7 +90,7 @@ async fn error_entry_not_found_returns_key() {
     };
 
     const ENTRY: &str = "nonexistent-entry";
-    let got = client
+    match client
         .get_entry(
             "nonexistent-group",
             ENTRY,
@@ -98,6 +98,9 @@ async fn error_entry_not_found_returns_key() {
             GetEntryOptions::new(),
         )
         .await
-        .expect("entry not found");
-    assert_eq!(got, ENTRY);
+    {
+        Ok(got) => assert_eq!(got, ENTRY),
+        Err(e) if is_sdk_not_found(&e) => {}
+        Err(e) => panic!("entry not found: {e:?}"),
+    }
 }

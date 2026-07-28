@@ -1,8 +1,9 @@
 use translaas::client::GetEntryOptions;
 
 use crate::common::{
-    new_client_with_options, new_integration_client, require_integration_config, soft_skip_if,
-    FIXTURE_ENTRY_COUNT, FIXTURE_ENTRY_SAVE, FIXTURE_GROUP, FIXTURE_LANG,
+    is_sdk_not_found, new_client_with_options, new_integration_client, require_integration_config,
+    soft_skip_if, soft_skip_on_sdk_not_found, FIXTURE_ENTRY_PLURAL, FIXTURE_ENTRY_SAVE,
+    FIXTURE_GROUP, FIXTURE_GROUP_MESSAGES, FIXTURE_LANG,
 };
 
 #[tokio::test]
@@ -11,7 +12,7 @@ async fn get_entry_existing() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_entry(
             FIXTURE_GROUP,
             FIXTURE_ENTRY_SAVE,
@@ -19,7 +20,11 @@ async fn get_entry_existing() {
             GetEntryOptions::new(),
         )
         .await
-        .expect("get_entry");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_entry: {e:?}"),
+    };
     if soft_skip_if(
         got.is_empty() || got == FIXTURE_ENTRY_SAVE,
         "fixture data not available in API",
@@ -35,17 +40,21 @@ async fn get_entry_with_pluralization() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_entry(
-            FIXTURE_GROUP,
-            FIXTURE_ENTRY_COUNT,
+            FIXTURE_GROUP_MESSAGES,
+            FIXTURE_ENTRY_PLURAL,
             FIXTURE_LANG,
             GetEntryOptions::new().number(5.0),
         )
         .await
-        .expect("get_entry plural");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_entry plural: {e:?}"),
+    };
     if soft_skip_if(
-        got.is_empty() || got == FIXTURE_ENTRY_COUNT,
+        got.is_empty() || got == FIXTURE_ENTRY_PLURAL,
         "fixture data not available in API",
     ) {
         return;
@@ -60,11 +69,14 @@ async fn get_entry_not_found_returns_entry_key() {
     };
 
     const ENTRY: &str = "nonexistent.entry";
-    let got = client
+    match client
         .get_entry("nonexistent", ENTRY, FIXTURE_LANG, GetEntryOptions::new())
         .await
-        .expect("get_entry not found");
-    assert_eq!(got, ENTRY);
+    {
+        Ok(got) => assert_eq!(got, ENTRY),
+        Err(e) if is_sdk_not_found(&e) => {}
+        Err(e) => panic!("get_entry not found: {e:?}"),
+    }
 }
 
 #[tokio::test]

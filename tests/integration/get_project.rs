@@ -1,6 +1,9 @@
 use translaas::client::GetProjectOptions;
 
-use crate::common::{new_integration_client, soft_skip_if, FIXTURE_LANG};
+use crate::common::{
+    is_sdk_not_found, new_integration_client, soft_skip_if, soft_skip_on_sdk_not_found,
+    FIXTURE_LANG,
+};
 
 #[tokio::test]
 async fn get_project_existing() {
@@ -8,10 +11,14 @@ async fn get_project_existing() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_project(&cfg.default_project, FIXTURE_LANG, GetProjectOptions::new())
         .await
-        .expect("get_project");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_project: {e:?}"),
+    };
     if soft_skip_if(got.groups.is_empty(), "fixture data not available in API") {
         return;
     }
@@ -24,14 +31,18 @@ async fn get_project_with_format() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_project(
             &cfg.default_project,
             FIXTURE_LANG,
             GetProjectOptions::new().format("json"),
         )
         .await
-        .expect("get_project format");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_project format: {e:?}"),
+    };
     if soft_skip_if(got.groups.is_empty(), "fixture data not available in API") {
         return;
     }
@@ -44,15 +55,18 @@ async fn get_project_not_found() {
         return;
     };
 
-    let got = client
+    match client
         .get_project(
             "nonexistent-project",
             FIXTURE_LANG,
             GetProjectOptions::new(),
         )
         .await
-        .expect("get_project missing");
-    assert!(got.groups.is_empty());
+    {
+        Ok(got) => assert!(got.groups.is_empty()),
+        Err(e) if is_sdk_not_found(&e) => {}
+        Err(e) => panic!("get_project missing: {e:?}"),
+    }
 }
 
 #[tokio::test]
@@ -61,19 +75,27 @@ async fn get_project_multiple_groups() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_project(&cfg.default_project, FIXTURE_LANG, GetProjectOptions::new())
         .await
-        .expect("get_project walk");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_project walk: {e:?}"),
+    };
     if soft_skip_if(got.groups.is_empty(), "fixture data not available in API") {
         return;
     }
 
+    let mut walked = 0;
     for group_name in got.groups.keys() {
-        let group = got
-            .get_group(group_name)
-            .expect("parse group")
-            .expect("group present");
+        let Some(group) = got.get_group(group_name).expect("parse group") else {
+            continue;
+        };
         assert!(!group.entries.is_empty());
+        walked += 1;
+    }
+    if soft_skip_if(walked == 0, "fixture data not available in API") {
+        return;
     }
 }

@@ -29,7 +29,7 @@ test:
 
 # Live API integration tests (requires TRANSLAAS_API_KEY).
 test-integration:
-    cargo test --features integration,service --test live_api -- --nocapture
+    cargo test --features integration,service --test live_api -- --test-threads=1 --nocapture
 
 build:
     cargo build --features cache,offline,service,axum

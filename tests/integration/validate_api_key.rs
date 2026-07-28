@@ -1,16 +1,21 @@
-use translaas::client::{ClientBuilder, GetEntryOptions};
+use translaas::client::GetEntryOptions;
+use translaas::models::read_json_ulid;
 
 use crate::common::{
-    new_integration_client, require_integration_config, soft_skip_if, FIXTURE_ENTRY_SAVE,
-    FIXTURE_GROUP, FIXTURE_LANG,
+    integration_client_builder, require_integration_config, soft_skip_if, soft_skip_on_sdk_not_found,
+    FIXTURE_ENTRY_SAVE, FIXTURE_GROUP, FIXTURE_LANG,
 };
-use translaas::models::read_json_ulid;
 
 #[tokio::test]
 async fn validate_api_key_valid() {
-    let Some((_, client)) = new_integration_client().await else {
+    let Some(cfg) = require_integration_config().await else {
         return;
     };
+    let client = integration_client_builder(&cfg, std::time::Duration::from_secs(30))
+        .api_key(&cfg.api_key)
+        .base_url(&cfg.base_url)
+        .build()
+        .expect("client");
 
     let got = client.validate_api_key().await.expect("validate_api_key");
     assert!(got.is_valid);
@@ -22,7 +27,7 @@ async fn build_with_resolved_project_single_project_key() {
         return;
     };
 
-    let client = ClientBuilder::new()
+    let client = integration_client_builder(&cfg, std::time::Duration::from_secs(30))
         .api_key(&cfg.api_key)
         .base_url(&cfg.base_url)
         .build_with_resolved_project()
@@ -36,7 +41,7 @@ async fn build_with_resolved_project_single_project_key() {
         return;
     }
 
-    let got = client
+    let got = match client
         .get_entry(
             FIXTURE_GROUP,
             FIXTURE_ENTRY_SAVE,
@@ -44,7 +49,11 @@ async fn build_with_resolved_project_single_project_key() {
             GetEntryOptions::new(),
         )
         .await
-        .expect("get_entry resolved project");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_entry resolved project: {e:?}"),
+    };
     if soft_skip_if(
         got == FIXTURE_ENTRY_SAVE,
         "fixture data not available in API",

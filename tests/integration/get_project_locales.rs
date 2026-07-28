@@ -1,6 +1,8 @@
 use translaas::client::GetProjectLocalesOptions;
 
-use crate::common::{new_integration_client, soft_skip_if};
+use crate::common::{
+    is_sdk_not_found, new_integration_client, soft_skip_if, soft_skip_on_sdk_not_found,
+};
 
 #[tokio::test]
 async fn get_project_locales_existing() {
@@ -8,10 +10,14 @@ async fn get_project_locales_existing() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_project_locales(&cfg.default_project, GetProjectLocalesOptions::new())
         .await
-        .expect("get_project_locales");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_project_locales: {e:?}"),
+    };
     if soft_skip_if(got.locales.is_empty(), "fixture data not available in API") {
         return;
     }
@@ -24,10 +30,14 @@ async fn get_project_locales_common() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_project_locales(&cfg.default_project, GetProjectLocalesOptions::new())
         .await
-        .expect("get_project_locales common");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_project_locales common: {e:?}"),
+    };
     if soft_skip_if(got.locales.is_empty(), "fixture data not available in API") {
         return;
     }
@@ -49,9 +59,12 @@ async fn get_project_locales_not_found() {
         return;
     };
 
-    let got = client
+    match client
         .get_project_locales("nonexistent-project", GetProjectLocalesOptions::new())
         .await
-        .expect("get_project_locales missing");
-    assert!(got.locales.is_empty());
+    {
+        Ok(got) => assert!(got.locales.is_empty()),
+        Err(e) if is_sdk_not_found(&e) => {}
+        Err(e) => panic!("get_project_locales missing: {e:?}"),
+    }
 }

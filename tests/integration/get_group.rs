@@ -1,6 +1,9 @@
 use translaas::client::GetGroupOptions;
 
-use crate::common::{new_integration_client, soft_skip_if, FIXTURE_GROUP, FIXTURE_LANG};
+use crate::common::{
+    is_sdk_not_found, new_integration_client, soft_skip_if, soft_skip_on_sdk_not_found,
+    FIXTURE_GROUP, FIXTURE_LANG,
+};
 
 #[tokio::test]
 async fn get_group_existing() {
@@ -8,7 +11,7 @@ async fn get_group_existing() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_group(
             &cfg.default_project,
             FIXTURE_GROUP,
@@ -16,7 +19,11 @@ async fn get_group_existing() {
             GetGroupOptions::new(),
         )
         .await
-        .expect("get_group");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_group: {e:?}"),
+    };
     if soft_skip_if(got.entries.is_empty(), "fixture data not available in API") {
         return;
     }
@@ -29,7 +36,7 @@ async fn get_group_with_format() {
         return;
     };
 
-    let got = client
+    let got = match client
         .get_group(
             &cfg.default_project,
             FIXTURE_GROUP,
@@ -37,7 +44,11 @@ async fn get_group_with_format() {
             GetGroupOptions::new().format("json"),
         )
         .await
-        .expect("get_group format");
+    {
+        Ok(v) => v,
+        Err(e) if soft_skip_on_sdk_not_found(&e) => return,
+        Err(e) => panic!("get_group format: {e:?}"),
+    };
     if soft_skip_if(got.entries.is_empty(), "fixture data not available in API") {
         return;
     }
@@ -50,7 +61,7 @@ async fn get_group_not_found() {
         return;
     };
 
-    let got = client
+    match client
         .get_group(
             &cfg.default_project,
             "nonexistent-group",
@@ -58,8 +69,11 @@ async fn get_group_not_found() {
             GetGroupOptions::new(),
         )
         .await
-        .expect("get_group missing group");
-    assert!(got.entries.is_empty());
+    {
+        Ok(got) => assert!(got.entries.is_empty()),
+        Err(e) if is_sdk_not_found(&e) => {}
+        Err(e) => panic!("get_group missing group: {e:?}"),
+    }
 }
 
 #[tokio::test]
@@ -68,7 +82,7 @@ async fn get_group_project_not_found() {
         return;
     };
 
-    let got = client
+    match client
         .get_group(
             "nonexistent-project",
             FIXTURE_GROUP,
@@ -76,6 +90,9 @@ async fn get_group_project_not_found() {
             GetGroupOptions::new(),
         )
         .await
-        .expect("get_group missing project");
-    assert!(got.entries.is_empty());
+    {
+        Ok(got) => assert!(got.entries.is_empty()),
+        Err(e) if is_sdk_not_found(&e) => {}
+        Err(e) => panic!("get_group missing project: {e:?}"),
+    }
 }

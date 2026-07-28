@@ -25,7 +25,7 @@ jobs:
           cache-on-failure: true
 
       - name: Run integration tests
-        run: cargo test --features integration,service --test live_api -- --nocapture
+        run: cargo test --features integration,service --test live_api -- --test-threads=1 --nocapture
         env:
           TRANSLAAS_API_KEY: ${{ secrets.TRANSLAAS_API_KEY }}
           TRANSLAAS_BASE_URL: ${{ secrets.TRANSLAAS_BASE_URL }}
