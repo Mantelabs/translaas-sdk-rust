@@ -8,9 +8,18 @@ use super::language::{LanguageProvider, LanguageResolver};
 use super::options::{ServiceOptions, TOptions};
 
 /// Convenience translation API with optional automatic language resolution.
+#[derive(Clone)]
 pub struct Service<C> {
     client: C,
     resolver: Option<LanguageResolver>,
+}
+
+impl<C> std::fmt::Debug for Service<C> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Service")
+            .field("resolver", &self.resolver.is_some())
+            .finish_non_exhaustive()
+    }
 }
 
 impl<C: TranslaasClient> Service<C> {

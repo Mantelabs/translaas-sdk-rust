@@ -267,6 +267,63 @@ When no resolver is configured and no explicit language is set, `t()` returns [`
 
 Context cancellation before resolve (`context.Canceled` parity) is deferred until the client exposes an explicit cancel handle on `get_entry`.
 
+## Axum integration (`axum` feature)
+
+Enable the optional Axum helpers when building web apps:
+
+```toml
+[dependencies]
+translaas = { version = "0.1", features = ["axum"] }
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+Wire middleware once, then use the [`Translaas`](src/axum/extract.rs) extractor in handlers:
+
+```rust
+use std::sync::Arc;
+
+use axum::{Router, routing::get, middleware::from_fn_with_state};
+use translaas::axum::{middleware, translaas_middleware, MiddlewareOptions, Translaas};
+use translaas::client::ClientBuilder;
+use translaas::service::{
+    DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
+};
+
+async fn welcome(Translaas(service): Translaas<translaas::client::Client>) -> String {
+    service
+        .t("ui", "welcome", TOptions::new())
+        .await
+        .unwrap_or_else(|err| err.to_string())
+}
+
+# async fn demo() -> Result<(), Box<dyn std::error::Error>> {
+let client = ClientBuilder::new()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .base_url(std::env::var("TRANSLAAS_BASE_URL").unwrap_or_else(|_| "https://api.translaas.local".into()))
+    .build()?;
+
+let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
+let base = Service::new(client, ServiceOptions { resolver: Some(resolver) });
+let state = Arc::new(middleware(MiddlewareOptions::with_base_service(base))?);
+
+let app = Router::new()
+    .route("/", get(welcome))
+    .layer(from_fn_with_state(state.clone(), translaas_middleware))
+    .with_state(state);
+# let _ = app;
+# Ok(())
+# }
+```
+
+**Language resolution (defaults):** query `?lang=` → parsed `Accept-Language` → cookie `language`. Configure sources via [`MiddlewareOptions`](src/axum/middleware.rs). Route/path language uses an optional [`RouteLanguageFn`](src/axum/language.rs) callback.
+
+Runnable sample: [translaas-sdk-examples](https://github.com/Mantelabs/translaas-sdk-examples) `rust/basic`.
+
+### Security — XSS
+
+Translation strings returned by the SDK are **not HTML-escaped**. When rendering HTML, escape at the template layer (`askama`, `maud`, etc.) rather than concatenating raw translation output into markup. JSON and API responses must be encoded at the serializer layer.
+
 ## Quick start (async)
 
 ```rust
