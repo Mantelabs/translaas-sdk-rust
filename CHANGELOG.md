@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::cachefile::SyncService`: offline cache synchronization with inner
+  client, language filter, sync-all partial aggregation, optional background sync
+  (`start_background_sync` / `stop_background_sync`), and `SyncCallbacks` hooks (#11).
+- `translaas::cachefile::OfflineCacheOptions`: umbrella offline config with
+  `caching_options()` bridge to `CachingOptions`.
+- Sync service integration tests (Go-parity mock matrix, FileProvider round-trip,
+  background cancel/stop).
 - `translaas::cachefile::CachingClient`: offline decorator with `CacheFirst`, `ApiFirst`, and
   `CacheOnly` fallback modes; offline plural + placeholder resolution; group cache warm after
   API entry reads; `OfflineStubClient` for keyless `CacheOnly` (#10).

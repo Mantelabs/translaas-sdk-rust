@@ -18,7 +18,7 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 - [translaas-sdk-dotnet-porting-reference.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md)
 - [translaas-sdk-http-api-spec.md](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md)
 
-Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9), offline decorator [#10](https://github.com/Mantelabs/translaas-sdk-rust/issues/10).
+Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9), offline decorator [#10](https://github.com/Mantelabs/translaas-sdk-rust/issues/10), sync service [#11](https://github.com/Mantelabs/translaas-sdk-rust/issues/11).
 
 ## Caching
 
@@ -178,6 +178,45 @@ let client = CachingClient::new(
 # Ok(())
 # }
 ```
+
+### Populating the cache (`SyncService`)
+
+Use [`SyncService`](src/cachefile/sync_service.rs) with the **inner** [`Client`](src/client/mod.rs) — not [`CachingClient`](src/cachefile/caching_client.rs) — to pull translations into disk:
+
+```rust
+use std::sync::Arc;
+use translaas::cachefile::{
+    FileProvider, OfflineCacheOptions, SyncCallbacks, SyncService,
+};
+use translaas::client::Client;
+use tokio_util::sync::CancellationToken;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let inner = Client::builder()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .default_project_id("demo-project")
+    .build()?;
+
+let cache = FileProvider::new(".translaas-cache")?;
+let mut opts = OfflineCacheOptions::default_offline_cache_options();
+opts.default_project_id = "demo-project".into();
+opts.projects = vec!["demo-project".into()];
+
+let sync = SyncService::new(inner, cache, opts, SyncCallbacks::default());
+let cancel = CancellationToken::new();
+
+sync.sync_project("demo-project", "en", &cancel).await?;
+
+let svc = Arc::new(sync);
+svc.start_background_sync(cancel.clone());
+// … later: svc.stop_background_sync().await;
+# Ok(())
+# }
+```
+
+[`OfflineCacheOptions`](src/cachefile/offline_cache_options.rs) is the umbrella config (Go / .NET §4.3). Derive [`CachingOptions`](src/cachefile/caching_options.rs) via `opts.caching_options()?` when wrapping the same inner client for reads.
+
+Optional callbacks (`SyncCallbacks`) mirror Go hooks; adapt to channels by forwarding [`SyncEvent`](src/cachefile/sync_events.rs) variants from `on_sync_*` handlers.
 
 ## Quick start (async)
 
