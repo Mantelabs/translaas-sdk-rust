@@ -16,6 +16,7 @@ cache = []
 offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util"]
 service = []
 axum = ["service", "dep:axum"]
+integration = []
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
@@ -64,3 +65,8 @@ required-features = ["service"]
 [[test]]
 name = "axum_test"
 required-features = ["axum"]
+
+[[test]]
+name = "live_api"
+path = "tests/integration/live_api.rs"
+required-features = ["integration"]

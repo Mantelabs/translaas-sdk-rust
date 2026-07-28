@@ -9,7 +9,7 @@ default:
     @just help
 
 help:
-    @echo "translaas SDK (MSRV 1.86) — targets: fmt, fmt-check, clippy, lint, test, build, coverage, check, clean"
+    @echo "translaas SDK (MSRV 1.86) — targets: fmt, fmt-check, clippy, lint, test, test-integration, build, coverage, check, clean"
     @echo "Features: cache (default), offline, service, axum"
     @echo "Samples: https://github.com/acuencadev/translaas-sdk-examples (rust/)"
 
@@ -20,18 +20,22 @@ fmt-check:
     cargo fmt --all -- --check
 
 clippy:
-    cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --all-targets --features cache,offline,service,axum -- -D warnings
 
 lint: fmt-check clippy
 
 test:
-    cargo test --all-features
+    cargo test --features cache,offline,service,axum
+
+# Live API integration tests (requires TRANSLAAS_API_KEY).
+test-integration:
+    cargo test --features integration,service --test live_api -- --test-threads=1 --nocapture
 
 build:
-    cargo build --all-features
+    cargo build --features cache,offline,service,axum
 
 coverage:
-    cargo llvm-cov --all-features --summary-only
+    cargo llvm-cov --features cache,offline,service,axum --summary-only
 
 check: lint test build
 

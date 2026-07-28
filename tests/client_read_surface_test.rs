@@ -217,6 +217,35 @@ async fn get_project_success() {
 }
 
 #[tokio::test]
+async fn get_project_full_api_shape() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/sdk/v1/translations/project"))
+        .and(query_param("project", "translaas-sdk-samples"))
+        .and(query_param("lang", "en"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(
+            r#"{
+                "Project": "translaas-sdk-samples",
+                "Lang": "en",
+                "Version": 245734752,
+                "GeneratedAt": "2026-01-15T12:00:00Z",
+                "common": { "welcome.message": "Welcome" }
+            }"#,
+        ))
+        .mount(&server)
+        .await;
+
+    let client = new_test_client(&server).await;
+    let got = client
+        .get_project("translaas-sdk-samples", "en", GetProjectOptions::new())
+        .await
+        .unwrap();
+    assert_eq!(got.groups.len(), 1);
+    let group = got.get_group("common").unwrap().unwrap();
+    assert_eq!(group.get_value("welcome.message"), Some("Welcome"));
+}
+
+#[tokio::test]
 async fn get_project_with_options() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
