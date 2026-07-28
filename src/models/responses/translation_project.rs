@@ -34,8 +34,7 @@ impl TranslationProject {
         }
 
         if !raw.is_object() {
-            let group: TranslationGroup = serde_json::from_value(raw.clone())?;
-            return Ok(Some(group));
+            return Ok(None);
         }
 
         let obj = raw.as_object().expect("checked is_object");
@@ -63,6 +62,13 @@ impl<'de> Deserialize<'de> for TranslationProject {
 
 struct TranslationProjectVisitor;
 
+fn is_project_metadata_key(key: &str) -> bool {
+    matches!(
+        key,
+        "Project" | "Lang" | "Version" | "GeneratedAt" | "Channel" | "groupEntryContext"
+    )
+}
+
 impl<'de> Visitor<'de> for TranslationProjectVisitor {
     type Value = TranslationProject;
 
@@ -79,7 +85,7 @@ impl<'de> Visitor<'de> for TranslationProjectVisitor {
             if key == "groupEntryContext" {
                 project.group_entry_context =
                     Some(serde_json::from_value(value).map_err(de::Error::custom)?);
-            } else {
+            } else if !is_project_metadata_key(&key) {
                 project.groups.insert(key, value);
             }
         }
@@ -136,6 +142,23 @@ mod tests {
         let project: TranslationProject = serde_json::from_str(raw).unwrap();
         let group = project.get_group("ui").unwrap().unwrap();
         assert_eq!(group.get_value("save"), Some("Save"));
+    }
+
+    #[test]
+    fn translation_project_api_metadata_and_groups() {
+        let raw = r#"{
+            "Project": "translaas-sdk-samples",
+            "Lang": "en",
+            "Version": 245734752,
+            "GeneratedAt": "2026-01-15T12:00:00Z",
+            "groupEntryContext": { "common": { "welcome.message": { "note": "ctx" } } },
+            "common": { "welcome.message": "Welcome" }
+        }"#;
+        let project: TranslationProject = serde_json::from_str(raw).unwrap();
+        assert_eq!(project.groups.len(), 1);
+        assert!(!project.groups.contains_key("Version"));
+        let group = project.get_group("common").unwrap().unwrap();
+        assert_eq!(group.get_value("welcome.message"), Some("Welcome"));
     }
 
     #[test]
