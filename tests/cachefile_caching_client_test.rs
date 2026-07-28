@@ -1,5 +1,7 @@
 //! Integration tests for `cachefile::CachingClient` fallback modes.
 
+#![allow(clippy::type_complexity)]
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -239,7 +241,7 @@ impl Provider for MockCacheProvider {
         group: &str,
         lang: &str,
     ) -> Result<Option<TranslationGroup>, OfflineCacheError> {
-        let mut state = self.inner.lock().unwrap();
+        let state = self.inner.lock().unwrap();
         if state.get_group_error {
             return Err(OfflineCacheError::new(
                 "corrupt cache",
