@@ -30,21 +30,34 @@
 //!
 //! This is distinct from HTTP in-memory caching in [`crate::cache::MemoryProvider`].
 //!
-//! Decorator clients and background sync arrive in later issues (#10–#11).
+//! # Offline decorator
+//!
+//! [`CachingClient`] wraps [`crate::client::TranslaasClient`] with
+//! [`FallbackMode`] strategies for read operations. Background sync arrives in
+//! issue #11.
 
 #![warn(missing_docs)]
 
 mod atomic;
+mod caching_client;
+mod caching_options;
+mod fallback;
 mod file_provider;
 mod hybrid_options;
 mod hybrid_provider;
+mod offline_entry;
+mod offline_stub;
 mod paths;
 mod provider;
 mod types;
+mod update_group_cache;
 
+pub use caching_client::CachingClient;
+pub use caching_options::{CachingOptions, FallbackMode};
 pub use file_provider::{FileProvider, FileProviderOptions};
 pub use hybrid_options::HybridOptions;
 pub use hybrid_provider::HybridProvider;
+pub use offline_stub::OfflineStubClient;
 pub use paths::sanitize_path_segment;
 pub use provider::{Provider, SaveOptions};
 pub use types::{
