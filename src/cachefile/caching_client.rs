@@ -262,11 +262,7 @@ where
         lang: &str,
         opts: GetProjectOptions<'_>,
     ) -> Result<TranslationProject, Error> {
-        if let Some(cached) = self
-            .cache
-            .get_project(project, lang)
-            .map_err(Error::from)?
-        {
+        if let Some(cached) = self.cache.get_project(project, lang).map_err(Error::from)? {
             return Ok(cached);
         }
 
@@ -297,11 +293,7 @@ where
                 Ok(result)
             }
             Err(err) if is_network_or_api_error(&err) => {
-                if let Some(cached) = self
-                    .cache
-                    .get_project(project, lang)
-                    .map_err(Error::from)?
-                {
+                if let Some(cached) = self.cache.get_project(project, lang).map_err(Error::from)? {
                     Ok(cached)
                 } else {
                     Err(project_miss_error(project, lang))
@@ -316,11 +308,7 @@ where
         project: &str,
         lang: &str,
     ) -> Result<TranslationProject, Error> {
-        if let Some(cached) = self
-            .cache
-            .get_project(project, lang)
-            .map_err(Error::from)?
-        {
+        if let Some(cached) = self.cache.get_project(project, lang).map_err(Error::from)? {
             Ok(cached)
         } else {
             Err(project_miss_error(project, lang))
@@ -332,11 +320,7 @@ where
         project: &str,
         opts: GetProjectLocalesOptions<'_>,
     ) -> Result<ProjectLocales, Error> {
-        if let Some(cached) = self
-            .cache
-            .get_locales(project)
-            .map_err(Error::from)?
-        {
+        if let Some(cached) = self.cache.get_locales(project).map_err(Error::from)? {
             return Ok(cached);
         }
 
@@ -368,11 +352,7 @@ where
                 Ok(locales)
             }
             Err(err) if is_network_or_api_error(&err) => {
-                if let Some(cached) = self
-                    .cache
-                    .get_locales(project)
-                    .map_err(Error::from)?
-                {
+                if let Some(cached) = self.cache.get_locales(project).map_err(Error::from)? {
                     Ok(cached)
                 } else {
                     Err(locales_offline_cache_error(project, Some(&err)))
@@ -383,11 +363,7 @@ where
     }
 
     async fn get_project_locales_cache_only(&self, project: &str) -> Result<ProjectLocales, Error> {
-        if let Some(cached) = self
-            .cache
-            .get_locales(project)
-            .map_err(Error::from)?
-        {
+        if let Some(cached) = self.cache.get_locales(project).map_err(Error::from)? {
             Ok(cached)
         } else {
             Err(locales_offline_cache_error(project, None))
