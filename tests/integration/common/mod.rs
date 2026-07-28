@@ -6,6 +6,6 @@ pub use config::{
 };
 pub use helpers::{
     integration_client_builder, is_sdk_not_found, new_client_with_options, new_integration_client,
-    print_suite_skip_reason, require_integration_config, soft_skip_if,
-    soft_skip_on_sdk_not_found, soft_skip_on_service_sdk_not_found,
+    print_suite_skip_reason, require_integration_config, soft_skip_if, soft_skip_on_sdk_not_found,
+    soft_skip_on_service_sdk_not_found,
 };

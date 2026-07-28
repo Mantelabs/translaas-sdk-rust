@@ -51,8 +51,7 @@ pub fn soft_skip_if(condition: bool, message: &str) -> bool {
 
 /// True when the delivery API reports a missing SDK resource (Mantelabs platform uses HTTP 404).
 pub fn is_sdk_not_found(err: &Error) -> bool {
-    err.as_api()
-        .is_some_and(|api| api.status_code == 404)
+    err.as_api().is_some_and(|api| api.status_code == 404)
 }
 
 /// Soft-skip when the configured project (or resource) is missing on the API.

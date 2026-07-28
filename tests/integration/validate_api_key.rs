@@ -2,8 +2,8 @@ use translaas::client::GetEntryOptions;
 use translaas::models::read_json_ulid;
 
 use crate::common::{
-    integration_client_builder, require_integration_config, soft_skip_if, soft_skip_on_sdk_not_found,
-    FIXTURE_ENTRY_SAVE, FIXTURE_GROUP, FIXTURE_LANG,
+    integration_client_builder, require_integration_config, soft_skip_if,
+    soft_skip_on_sdk_not_found, FIXTURE_ENTRY_SAVE, FIXTURE_GROUP, FIXTURE_LANG,
 };
 
 #[tokio::test]
