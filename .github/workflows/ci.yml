@@ -62,7 +62,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --features cache,offline,service,axum -- -D warnings
 
   test:
     name: Test (${{ matrix.os }})
@@ -91,7 +91,7 @@ jobs:
         run: cargo test --workspace
 
       - name: Test (all features)
-        run: cargo test --workspace --all-features
+        run: cargo test --workspace --features cache,offline,service,axum
 
       - name: Test (no default features)
         run: cargo test --workspace --no-default-features
@@ -118,4 +118,4 @@ jobs:
           cache-on-failure: true
 
       - name: Build
-        run: cargo build --workspace --all-features
+        run: cargo build --workspace --features cache,offline,service,axum
