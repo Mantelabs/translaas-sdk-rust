@@ -52,3 +52,7 @@ required-features = ["offline"]
 [[test]]
 name = "cachefile_sync_service_test"
 required-features = ["offline"]
+
+[[test]]
+name = "service_test"
+required-features = ["service"]
