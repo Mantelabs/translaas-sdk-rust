@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `translaas::axum`: optional Axum middleware, request language provider, and `Translaas`
+  extractor (#13). README documents XSS posture (translations are not HTML-escaped).
+- Axum integration tests (Go `web` parity for query/Accept-Language/cookie sources,
+  middleware injection, explicit lang bypass, prepend isolation).
 - `translaas::service`: convenience `t()` API with `LanguageResolver`, built-in language
   providers (`DefaultLanguageProvider`, `ContextLanguageProvider`, `AcceptLanguageProvider`),
   `LanguageContext`, and `with_prepended_providers` (#12).
