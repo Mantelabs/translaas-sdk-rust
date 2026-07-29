@@ -20,6 +20,44 @@ Phased roadmap aligned to the .NET reference SDK (`Translaas.SDK`):
 
 Tracking issues: foundation [#1](https://github.com/Mantelabs/translaas-sdk-rust/issues/1), client transport [#4](https://github.com/Mantelabs/translaas-sdk-rust/issues/4), client read surface [#5](https://github.com/Mantelabs/translaas-sdk-rust/issues/5), in-memory cache [#7](https://github.com/Mantelabs/translaas-sdk-rust/issues/7), offline file cache [#8](https://github.com/Mantelabs/translaas-sdk-rust/issues/8), hybrid L1 cache [#9](https://github.com/Mantelabs/translaas-sdk-rust/issues/9), offline decorator [#10](https://github.com/Mantelabs/translaas-sdk-rust/issues/10), sync service [#11](https://github.com/Mantelabs/translaas-sdk-rust/issues/11), convenience `t()` API [#12](https://github.com/Mantelabs/translaas-sdk-rust/issues/12).
 
+## Installation
+
+### Umbrella workspace (local path)
+
+When developing from a `translaas-all` checkout:
+
+```toml
+[dependencies]
+translaas = { path = "../../sdk/rust", features = ["service"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+Enable additional layers with Cargo features: `offline`, `service`, `axum` (see [Cargo features](#cargo-features)).
+
+### crates.io (not published yet)
+
+Publishing is tracked in [#16](https://github.com/Mantelabs/translaas-sdk-rust/issues/16). Until then, do not pin consumers against `0.0.0`:
+
+```toml
+# [dependencies]
+# translaas = { version = "0.4", features = ["service"] }
+# tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+Requires Rust **1.86+** and an async runtime (Tokio recommended) to drive [`Client`](src/client/mod.rs) methods.
+
+Runnable sample apps live in the meta-repo under [`examples/rust/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust) — not in this library repository.
+
+## Documentation
+
+| Resource | Purpose |
+|----------|---------|
+| [Rust SDK integration guide (KB)](https://github.com/Mantelabs/translaas-all/blob/main/.docs/kb/sdk-rust.md) | User-facing quickstart, env vars, feature overview |
+| [Implementation plan](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-rust-implementation.md) | Phased roadmap and issue breakdown |
+| [HTTP API spec](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md) | Delivery API wire contract |
+| [Porting reference](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md) | Cross-language behavioral contract |
+| [Go SDK README](../go/README.md) (meta-repo) | Closest systems-language peer |
+
 ## Caching
 
 Configure in-memory caching on [`ClientBuilder`](src/client/builder.rs):
@@ -318,13 +356,47 @@ let app = Router::new()
 
 **Language resolution (defaults):** query `?lang=` → parsed `Accept-Language` → cookie `language`. Configure sources via [`MiddlewareOptions`](src/axum/middleware.rs). Route/path language uses an optional [`RouteLanguageFn`](src/axum/language.rs) callback.
 
-Runnable sample: [translaas-sdk-examples](https://github.com/Mantelabs/translaas-sdk-examples) `rust/basic`.
+Runnable sample: [`examples/rust/basic`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic) (Axum sample planned).
 
 ### Security — XSS
 
 Translation strings returned by the SDK are **not HTML-escaped**. When rendering HTML, escape at the template layer (`askama`, `maud`, etc.) rather than concatenating raw translation output into markup. JSON and API responses must be encoded at the serializer layer.
 
-## Quick start (async)
+## Quick start
+
+### Option A — `service::Service` (recommended)
+
+```rust
+use translaas::cache::CacheMode;
+use translaas::client::ClientBuilder;
+use translaas::service::{
+    DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
+};
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let client = ClientBuilder::new()
+    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+    .base_url(std::env::var("TRANSLAAS_BASE_URL").unwrap_or_else(|_| "https://sdk-api.translaas.local".into()))
+    .default_project_id(std::env::var("TRANSLAAS_DEFAULT_PROJECT").unwrap_or_else(|_| "test-project".into()))
+    .cache_mode(CacheMode::Group)
+    .build()?;
+
+let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
+let service = Service::new(client, ServiceOptions {
+    resolver: Some(resolver),
+});
+
+let text = service
+    .t("ui", "button.save", TOptions::new().lang("en"))
+    .await?;
+println!("{text}");
+# Ok(())
+# }
+```
+
+See also: [`examples/rust/basic`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic).
+
+### Option B — `client::Client` (direct API)
 
 ```rust
 use translaas::client::{Client, GetEntryOptions};
@@ -333,15 +405,32 @@ use translaas::client::{Client, GetEntryOptions};
 let client = Client::builder()
     .api_key(std::env::var("TRANSLAAS_API_KEY")?)
     .base_url("https://api.translaas.local")
+    .default_project_id("test-project")
     .build()?;
 
 let text = client
     .get_entry("ui", "greeting", "en", GetEntryOptions::new())
     .await?;
+// 200 → plain text body; 204 → returns entry key unchanged
 println!("{text}");
 # Ok(())
 # }
 ```
+
+Additional options on [`GetEntryOptions`](src/client/get_entry.rs): number, parameters, request context. Group/project/locales endpoints return **JSON** payloads.
+
+The text endpoint returns **plain text** (`Accept: text/plain`), **not** a JSON wrapper like `{ "value": "…" }`.
+
+## Compatibility
+
+| Rust SDK | .NET SDK | Go SDK | Delivery API | Notes |
+|----------|----------|--------|--------------|-------|
+| `0.0.0` (dev) / target `v0.4.0-beta` | `v0.4.1-beta` | `v0.4.0-beta` | `/sdk/v1` + `/api/v1/api-keys/validate` | M4 parity: client, cache, offline, `t()`, axum |
+| (future) `v0.3.0-beta` | — | `v0.3.0-beta` | same | Offline + sync |
+| (future) `v0.2.0-beta` | — | `v0.2.0-beta` | same | In-memory `CacheMode` |
+| (future) `v0.1.0-alpha` | — | `v0.1.0-alpha` | same | Read-only client |
+
+**Known divergences:** no built-in retry policy in Rust v1; simplified offline pluralization; text endpoint returns plain text (not JSON).
 
 ## Cargo features
 
@@ -396,7 +485,13 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for TDD expectations, commit style, and
 
 ## Samples
 
-Runnable sample apps live in **[translaas-sdk-examples](https://github.com/acuencadev/translaas-sdk-examples)** under `rust/`, not in this library repository.
+Runnable sample apps live in the meta-repo under [`examples/rust/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust) — not in this library repository.
+
+| Sample | Status | Purpose |
+|--------|--------|---------|
+| [`basic/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic) | Available | Console quickstart — fetch a translation with `service::t()` |
+| `offline/` | Planned | Sync project to disk, then read with cache-only mode |
+| `axum/` | Planned | Axum middleware + extractor |
 
 ## CI
 
