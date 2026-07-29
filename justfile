@@ -9,7 +9,7 @@ default:
     @just help
 
 help:
-    @echo "translaas SDK (MSRV 1.86) — targets: fmt, fmt-check, clippy, lint, test, test-integration, build, coverage, check, clean"
+    @echo "translaas SDK (MSRV 1.86) — targets: fmt, fmt-check, clippy, lint, test, test-integration, build, coverage, check, publish-dry-run, clean"
     @echo "Features: cache (default), offline, service, axum"
     @echo "Samples: https://github.com/acuencadev/translaas-sdk-examples (rust/)"
 
@@ -38,6 +38,9 @@ coverage:
     cargo llvm-cov --features cache,offline,service,axum --summary-only
 
 check: lint test build
+
+publish-dry-run:
+    cargo publish --dry-run --locked
 
 clean:
     cargo clean

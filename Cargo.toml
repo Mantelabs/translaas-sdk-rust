@@ -1,14 +1,21 @@
 [package]
 name = "translaas"
-version = "0.0.0"
+version = "0.4.0-beta"
 edition = "2021"
 rust-version = "1.86"
 license = "MIT"
+authors = ["Translaas SDK Contributors"]
 repository = "https://github.com/Mantelabs/translaas-sdk-rust"
+homepage = "https://github.com/Mantelabs/translaas-sdk-rust"
+documentation = "https://docs.rs/translaas"
 description = "Official Translaas client SDK for Rust"
 readme = "README.md"
 keywords = ["translaas", "i18n", "localization", "sdk"]
 categories = ["api-bindings", "internationalization"]
+exclude = ["/.github/", "/scripts/", "/target/"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = ["cache"]
