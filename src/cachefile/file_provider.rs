@@ -57,6 +57,14 @@ impl FileProvider {
         &self.dir
     }
 
+    pub(crate) fn check_operation_cancelled(
+        &self,
+        project: &str,
+        lang: &str,
+    ) -> Result<(), OfflineCacheError> {
+        check_cancelled(&self.dir, project, lang, (self.cancel_check)())
+    }
+
     fn now(&self) -> DateTime<Utc> {
         (self.now)()
     }

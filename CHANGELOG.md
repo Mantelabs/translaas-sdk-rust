@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `cachefile::parse_offline_zip`, `resolve_project_key`, and `OfflineBundle` for offline ZIP bundle parsing (HTTP spec §7.6).
+- `FileProvider::import_offline_bundle` to seed on-disk cache from ZIP bytes.
+- `SyncService::sync_from_offline_zip` to download and import an offline ZIP in one call.
+
 ## [0.4.0-beta] - 2026-07-29
 
 ### Changed

@@ -1,0 +1,146 @@
+//! Shared offline ZIP builders for cachefile integration tests.
+
+#![allow(dead_code)]
+
+use std::io::{Cursor, Write};
+
+use chrono::Utc;
+use serde_json::{json, Value};
+use zip::write::{FileOptions, ZipWriter};
+use zip::CompressionMethod;
+
+type ZipWriterCursor = ZipWriter<Cursor<Vec<u8>>>;
+
+fn minimal_manifest(projects: Value) -> Value {
+    json!({
+        "version": "1.0",
+        "sdkVersion": "1.0.0",
+        "createdAt": "2026-01-01T00:00:00Z",
+        "lastSyncAt": "2026-01-01T00:00:00Z",
+        "projects": projects,
+    })
+}
+
+pub fn build_test_offline_zip() -> Vec<u8> {
+    build_test_offline_zip_with(|_| {})
+}
+
+pub fn build_test_offline_zip_with(mut mutate: impl FnMut(&mut ZipWriterCursor)) -> Vec<u8> {
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+
+    let manifest = json!({
+        "version": "1.0",
+        "sdkVersion": "1.0.0",
+        "createdAt": "2026-01-01T00:00:00Z",
+        "lastSyncAt": "2026-01-01T00:00:00Z",
+        "projects": {
+            "demo-project": {
+                "languages": ["en", "de"],
+                "lastSyncAt": "2026-01-01T00:00:00Z",
+                "status": "synced"
+            }
+        }
+    });
+    write_zip_json(&mut writer, "manifest.json", &manifest).expect("manifest");
+
+    let locales_wrapper = json!({
+        "cachedAt": "2026-01-01T00:00:00Z",
+        "data": { "locales": ["en", "de"] }
+    });
+    write_zip_json(&mut writer, "demo-project/locales.json", &locales_wrapper).expect("locales");
+
+    let en_project = json!({
+        "cachedAt": "2026-01-01T00:00:00Z",
+        "data": { "common": { "hello": "Hello" } }
+    });
+    write_zip_json(&mut writer, "demo-project/en/project.json", &en_project).expect("en");
+
+    let de_project = json!({
+        "cachedAt": "2026-01-01T00:00:00Z",
+        "data": { "common": { "hello": "Hallo" } }
+    });
+    write_zip_json(&mut writer, "demo-project/de/project.json", &de_project).expect("de");
+
+    mutate(&mut writer);
+
+    writer.finish().expect("finish zip").into_inner()
+}
+
+pub fn write_zip_json(
+    writer: &mut ZipWriterCursor,
+    name: &str,
+    value: &Value,
+) -> Result<(), zip::result::ZipError> {
+    let payload = serde_json::to_vec(value).expect("marshal json");
+    write_zip_entry(writer, name, &payload)
+}
+
+pub fn write_zip_entry(
+    writer: &mut ZipWriterCursor,
+    name: &str,
+    payload: &[u8],
+) -> Result<(), zip::result::ZipError> {
+    let options = FileOptions::default().compression_method(CompressionMethod::Stored);
+    writer.start_file(name, options)?;
+    writer.write_all(payload)?;
+    Ok(())
+}
+
+pub fn build_sanitized_folder_zip() -> Vec<u8> {
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+
+    write_zip_json(&mut writer, "manifest.json", &minimal_manifest(json!({}))).expect("manifest");
+    write_zip_json(
+        &mut writer,
+        "my_project/locales.json",
+        &json!({
+            "cachedAt": "2026-01-01T00:00:00Z",
+            "data": { "locales": ["en"] }
+        }),
+    )
+    .expect("locales");
+    write_zip_json(
+        &mut writer,
+        "my_project/en/project.json",
+        &json!({
+            "cachedAt": "2026-01-01T00:00:00Z",
+            "data": { "common": { "hello": "Hi" } }
+        }),
+    )
+    .expect("project");
+
+    writer.finish().expect("finish").into_inner()
+}
+
+pub fn build_multi_project_zip() -> Vec<u8> {
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+
+    write_zip_json(&mut writer, "manifest.json", &minimal_manifest(json!({}))).expect("manifest");
+    write_zip_json(
+        &mut writer,
+        "project-a/en/project.json",
+        &json!({
+            "cachedAt": "2026-01-01T00:00:00Z",
+            "data": { "common": { "hello": "A" } }
+        }),
+    )
+    .expect("project-a");
+    write_zip_json(
+        &mut writer,
+        "project-b/en/project.json",
+        &json!({
+            "cachedAt": "2026-01-01T00:00:00Z",
+            "data": { "common": { "hello": "B" } }
+        }),
+    )
+    .expect("project-b");
+
+    writer.finish().expect("finish").into_inner()
+}
+
+pub fn past_rfc3339() -> String {
+    (Utc::now() - chrono::Duration::hours(1)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+}
