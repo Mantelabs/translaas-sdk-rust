@@ -1,10 +1,10 @@
 # Translaas SDK for Rust
 
-Official Translaas client SDK for Rust (`translaas` on crates.io — **not published yet**).
+Official Translaas client SDK for Rust ([`translaas` on crates.io](https://crates.io/crates/translaas)).
 
 | | |
 |---|---|
-| **Status** | Phase 2 client (`0.0.0`) — live HTTP, in-memory cache, offline file cache |
+| **Status** | M4 parity beta (`0.4.0-beta`) — live HTTP, in-memory cache, offline file cache, `service`, axum |
 | **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
@@ -34,17 +34,28 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 Enable additional layers with Cargo features: `offline`, `service`, `axum` (see [Cargo features](#cargo-features)).
 
-### crates.io (not published yet)
+### crates.io
 
-Publishing is tracked in [#16](https://github.com/Mantelabs/translaas-sdk-rust/issues/16). Until then, do not pin consumers against `0.0.0`:
+Pin to a semver release (recommended for production):
 
-```toml
-# [dependencies]
-# translaas = { version = "0.4", features = ["service"] }
-# tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```bash
+cargo add translaas@=0.4.0-beta --features service
 ```
 
+```toml
+[dependencies]
+translaas = { version = "=0.4.0-beta", features = ["service"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+Enable additional layers with Cargo features: `offline`, `service`, `axum` (see [Cargo features](#cargo-features)).
+
+- [crates.io/translaas](https://crates.io/crates/translaas)
+- [docs.rs/translaas](https://docs.rs/translaas)
+
 Requires Rust **1.86+** and an async runtime (Tokio recommended) to drive [`Client`](src/client/mod.rs) methods.
+
+Maintainers: see [CONTRIBUTING.md § Releasing](./CONTRIBUTING.md#releasing).
 
 Runnable sample apps live in the meta-repo under [`examples/rust/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust) — not in this library repository.
 
@@ -91,7 +102,7 @@ Enable the `offline` feature for on-disk caching (`translaas::cachefile`). Disk 
 
 ```toml
 [dependencies]
-translaas = { version = "0.1", features = ["offline"] }
+translaas = { version = "=0.4.0-beta", features = ["offline"] }
 ```
 
 ```rust
@@ -262,7 +273,7 @@ Enable the `service` feature for a thin wrapper over `get_entry` with automatic 
 
 ```toml
 [dependencies]
-translaas = { version = "0.1", features = ["service"] }
+translaas = { version = "=0.4.0-beta", features = ["service"] }
 ```
 
 ```rust
@@ -311,7 +322,7 @@ Enable the optional Axum helpers when building web apps:
 
 ```toml
 [dependencies]
-translaas = { version = "0.1", features = ["axum"] }
+translaas = { version = "=0.4.0-beta", features = ["axum"] }
 axum = "0.8"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -425,7 +436,7 @@ The text endpoint returns **plain text** (`Accept: text/plain`), **not** a JSON 
 
 | Rust SDK | .NET SDK | Go SDK | Delivery API | Notes |
 |----------|----------|--------|--------------|-------|
-| `0.0.0` (dev) / target `v0.4.0-beta` | `v0.4.1-beta` | `v0.4.0-beta` | `/sdk/v1` + `/api/v1/api-keys/validate` | M4 parity: client, cache, offline, `t()`, axum |
+| `0.4.0-beta` | `v0.4.1-beta` | `v0.4.0-beta` | `/sdk/v1` + `/api/v1/api-keys/validate` | M4 parity: client, cache, offline, `t()`, axum |
 | (future) `v0.3.0-beta` | — | `v0.3.0-beta` | same | Offline + sync |
 | (future) `v0.2.0-beta` | — | `v0.2.0-beta` | same | In-memory `CacheMode` |
 | (future) `v0.1.0-alpha` | — | `v0.1.0-alpha` | same | Read-only client |
@@ -443,9 +454,8 @@ The text endpoint returns **plain text** (`Accept: text/plain`), **not** a JSON 
 | `integration` | no | **Test-only** — live API integration harness (`make test-integration`) |
 
 ```toml
-# Coming in M1 — do not publish consumers against 0.0.0 yet
-# [dependencies]
-# translaas = "0.1"
+[dependencies]
+translaas = { version = "=0.4.0-beta", features = ["cache"] }
 ```
 
 ## Development
@@ -496,3 +506,5 @@ Runnable sample apps live in the meta-repo under [`examples/rust/`](https://gith
 ## CI
 
 GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.86.0** in a dedicated job.
+
+Tag-driven releases use [`.github/workflows/release.yml`](./.github/workflows/release.yml) — the same quality bar as CI, plus `cargo publish` to crates.io and a GitHub Release from `CHANGELOG.md`. See [CONTRIBUTING.md § Releasing](./CONTRIBUTING.md#releasing).

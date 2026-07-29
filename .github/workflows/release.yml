@@ -1,0 +1,217 @@
+# Keep release jobs in sync with ci.yml.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate gates and cargo publish --dry-run only (no registry upload or GitHub Release)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  msrv:
+    name: MSRV (1.86)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.86.0
+        uses: dtolnay/rust-toolchain@1.86.0
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-msrv-1.86
+          cache-on-failure: true
+
+      - name: Metadata
+        run: cargo metadata --no-deps --format-version 1
+
+      - name: Check
+        run: cargo check --workspace --all-targets --locked
+
+      - name: Test
+        run: cargo test --workspace --locked
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-lint
+          cache-on-failure: true
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --features cache,offline,service,axum -- -D warnings
+
+  test:
+    name: Test (${{ matrix.os }})
+    needs: [lint]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-test
+          cache-on-failure: true
+
+      - name: Test (default features)
+        run: cargo test --workspace
+
+      - name: Test (all features)
+        run: cargo test --workspace --features cache,offline,service,axum
+
+      - name: Test (no default features)
+        run: cargo test --workspace --no-default-features
+
+      - name: README quickstart compile check
+        run: cargo test --test readme_quickstart --features service
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: [msrv, lint, test]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-build
+          cache-on-failure: true
+
+      - name: Build
+        run: cargo build --workspace --features cache,offline,service,axum
+
+  publish:
+    name: Publish
+    needs: [msrv, lint, test, build]
+    if: |
+      always() &&
+      needs.msrv.result == 'success' &&
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      needs.build.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="translaas") | .version')"
+          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release version: $VERSION"
+
+      - name: Validate tag matches Cargo.toml
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: bash scripts/validate-release-version.sh "${{ steps.version.outputs.value }}"
+
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.value }}"
+          NOTES="$(bash scripts/extract-changelog-section.sh "$VERSION")"
+          if [[ -z "$NOTES" ]]; then
+            echo "No CHANGELOG section found for version [$VERSION]." >&2
+            exit 1
+          fi
+          {
+            echo "body<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-publish
+          cache-on-failure: true
+
+      - name: Publish dry-run
+        run: cargo publish --dry-run --locked
+
+      - name: Publish to crates.io
+        if: |
+          startsWith(github.ref, 'refs/tags/v') &&
+          (github.event_name != 'workflow_dispatch' || inputs.dry_run != true)
+        run: |
+          if [[ -z "${CARGO_REGISTRY_TOKEN:-}" ]]; then
+            echo "CARGO_REGISTRY_TOKEN is not configured. Add the crates.io API token as a repository secret." >&2
+            exit 1
+          fi
+          cargo publish --locked
+
+      - name: Create GitHub Release
+        if: |
+          startsWith(github.ref, 'refs/tags/v') &&
+          (github.event_name != 'workflow_dispatch' || inputs.dry_run != true)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.body }}
+          generate_release_notes: false

@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-beta] - 2026-07-29
+
 ### Changed
 
 - MSRV raised to **1.86** (crates.io dependencies now require edition 2024 and ICU 2.2 / Rust ≥ 1.86).
 
 ### Added
 
+- Tag-driven release workflow (`release.yml`), crates.io publish, maintainer release scripts, and pinned install docs (#16).
 - Live API integration tests under `tests/integration/` (env-gated via `TRANSLAAS_API_KEY`, `integration` Cargo feature) (#14).
 - `make test-integration` target and optional `integration.yml` GitHub Actions workflow for manual runs.
 - `translaas::axum`: optional Axum middleware, request language provider, and `Translaas`
