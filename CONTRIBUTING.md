@@ -109,12 +109,34 @@ Never commit token values. PR CI does **not** require `CARGO_REGISTRY_TOKEN`.
 5. (Optional) Run **Actions → Integration Tests → Run workflow** with live API secrets.
 6. Validate locally:
 
+   **Windows (PowerShell):**
+
+   ```powershell
+   just publish-dry-run
+   just validate-release 0.4.0-beta
+   just release-tag-dry-run
+   # or:
+   pwsh -File scripts/validate-release-version.ps1 0.4.0-beta
+   pwsh -File scripts/create-release-tag.ps1 -DryRun
+   ```
+
+   **Linux / macOS / CI:**
+
    ```bash
    just publish-dry-run
    bash scripts/create-release-tag.sh --dry-run
    ```
 
 7. Create and push the tag (triggers the release workflow):
+
+   **Windows (PowerShell):**
+
+   ```powershell
+   just release-tag 0.4.0-beta
+   # or: pwsh -File scripts/create-release-tag.ps1 0.4.0-beta
+   ```
+
+   **Linux / macOS:**
 
    ```bash
    bash scripts/create-release-tag.sh 0.4.0-beta
