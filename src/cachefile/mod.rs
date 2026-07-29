@@ -40,6 +40,10 @@
 //! [`SyncService`] pulls translations from the API into a [`Provider`] using the
 //! **inner** client (never [`CachingClient`]). Optional background sync uses a
 //! Tokio interval and [`tokio_util::sync::CancellationToken`].
+//!
+//! Offline ZIP bundles (HTTP spec §7.6) can be imported with
+//! [`FileProvider::import_offline_bundle`] or downloaded and imported via
+//! [`SyncService::sync_from_offline_zip`].
 
 #![warn(missing_docs)]
 
@@ -48,6 +52,7 @@ mod caching_client;
 mod caching_options;
 mod fallback;
 mod file_provider;
+mod file_provider_import;
 mod hybrid_options;
 mod hybrid_provider;
 mod offline_cache_options;
@@ -60,6 +65,7 @@ mod sync_language_filter;
 mod sync_service;
 mod types;
 mod update_group_cache;
+mod zip_bundle;
 
 pub use caching_client::CachingClient;
 pub use caching_options::{CachingOptions, FallbackMode};
@@ -76,3 +82,4 @@ pub use types::{
     CacheManifest, CachedLocales, CachedProject, ProjectCacheInfo, DEFAULT_SDK_VERSION,
     MANIFEST_VERSION,
 };
+pub use zip_bundle::{parse_offline_zip, resolve_project_key, OfflineBundle};

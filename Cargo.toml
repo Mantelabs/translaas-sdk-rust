@@ -20,7 +20,7 @@ all-features = true
 [features]
 default = ["cache"]
 cache = []
-offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util"]
+offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util", "dep:zip"]
 service = []
 axum = ["service", "dep:axum"]
 integration = []
@@ -35,6 +35,7 @@ thiserror = "2"
 tokio = { version = "1", optional = true, features = ["time", "sync", "rt", "macros"] }
 tokio-util = { version = "0.7", optional = true }
 url = "2.5.2"
+zip = { version = "0.6", default-features = false, features = ["deflate"], optional = true }
 axum = { version = "0.8", optional = true, default-features = false, features = ["matched-path", "query"] }
 
 [dev-dependencies]
@@ -67,6 +68,14 @@ required-features = ["offline"]
 
 [[test]]
 name = "cachefile_sync_service_test"
+required-features = ["offline"]
+
+[[test]]
+name = "cachefile_zip_bundle_test"
+required-features = ["offline"]
+
+[[test]]
+name = "cachefile_sync_offline_zip_test"
 required-features = ["offline"]
 
 [[test]]
