@@ -265,6 +265,33 @@ svc.start_background_sync(cancel.clone());
 
 [`OfflineCacheOptions`](src/cachefile/offline_cache_options.rs) is the umbrella config (Go / .NET §4.3). Derive [`CachingOptions`](src/cachefile/caching_options.rs) via `opts.caching_options()?` when wrapping the same inner client for reads.
 
+### Seeding from an offline ZIP
+
+Use [`FileProvider::import_offline_bundle`](src/cachefile/file_provider_import.rs) to seed the on-disk cache from downloaded ZIP bytes (CDN, air-gapped bundle, or [`Client::get_offline_cache`](src/client/get_offline_cache.rs)):
+
+```rust
+use translaas::cachefile::FileProvider;
+
+# fn example() -> Result<(), Box<dyn std::error::Error>> {
+let provider = FileProvider::new(".translaas-cache")?;
+let zip_bytes = std::fs::read("offline-bundle.zip")?;
+provider.import_offline_bundle("my-project", &zip_bytes)?;
+# Ok(())
+# }
+```
+
+Or download and import in one call via [`SyncService::sync_from_offline_zip`](src/cachefile/sync_service.rs) (inner client, not [`CachingClient`](src/cachefile/caching_client.rs)):
+
+```rust
+use tokio_util::sync::CancellationToken;
+# async fn example(sync: translaas::cachefile::SyncService<impl translaas::client::TranslaasClient, impl translaas::cachefile::Provider>) -> Result<(), translaas::client::Error> {
+sync.sync_from_offline_zip("my-project", &CancellationToken::new()).await?;
+# Ok(())
+# }
+```
+
+ZIP layout follows HTTP spec [§7.6](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-http-api-spec.md). Low-level parsing helpers: [`parse_offline_zip`](src/cachefile/zip_bundle.rs), [`resolve_project_key`](src/cachefile/zip_bundle.rs).
+
 Optional callbacks (`SyncCallbacks`) mirror Go hooks; adapt to channels by forwarding [`SyncEvent`](src/cachefile/sync_events.rs) variants from `on_sync_*` handlers.
 
 ### Convenience `t()` API (`service`)
