@@ -96,6 +96,9 @@ jobs:
       - name: Test (no default features)
         run: cargo test --workspace --no-default-features
 
+      - name: README quickstart compile check
+        run: cargo test --test readme_quickstart --features service
+
   build:
     name: Build (${{ matrix.os }})
     needs: [msrv, lint, test]

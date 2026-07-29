@@ -39,6 +39,10 @@ tower = "0.5"
 http-body-util = "0.1"
 
 [[test]]
+name = "readme_quickstart"
+required-features = ["service"]
+
+[[test]]
 name = "client_cache_integration_test"
 required-features = ["cache"]
 
