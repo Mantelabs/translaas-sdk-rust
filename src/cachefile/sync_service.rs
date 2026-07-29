@@ -7,13 +7,16 @@ use chrono::Utc;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-use crate::client::{Error, GetProjectLocalesOptions, GetProjectOptions, TranslaasClient};
+use crate::client::{
+    Error, GetOfflineCacheOptions, GetProjectLocalesOptions, GetProjectOptions, TranslaasClient,
+};
 use crate::models::ConfigurationError;
 
 use super::offline_cache_options::OfflineCacheOptions;
 use super::provider::{Provider, SaveOptions};
 use super::sync_events::{SyncCallbacks, SyncCompletedEvent, SyncFailedEvent, SyncResult};
 use super::sync_language_filter::filter_sync_languages;
+use super::zip_bundle::{apply_offline_bundle, parse_offline_zip, resolve_project_key};
 
 struct BackgroundSyncState {
     cancel: Option<CancellationToken>,
@@ -254,6 +257,106 @@ where
         result.completed_at = Utc::now();
         self.emit_sync_all_completed(result.clone());
         Ok(result)
+    }
+
+    /// Downloads the offline ZIP for `project` via the inner client and imports it.
+    ///
+    /// Returns `Ok(())` when the download is **304 Not Modified** or the body is empty.
+    pub async fn sync_from_offline_zip(
+        &self,
+        project: &str,
+        cancel: &CancellationToken,
+    ) -> Result<(), Error> {
+        let project = project.trim();
+        if project.is_empty() {
+            return Err(Error::Configuration(ConfigurationError {
+                message: "cachefile: project must not be empty".to_string(),
+            }));
+        }
+
+        if cancel.is_cancelled() {
+            return Err(Error::Canceled);
+        }
+
+        let _guard = self.sync_mu.lock().await;
+
+        let result = match self
+            .client
+            .get_offline_cache(project, GetOfflineCacheOptions::new())
+            .await
+        {
+            Ok(result) => result,
+            Err(err) => {
+                self.emit_sync_failed(SyncFailedEvent {
+                    project: project.to_string(),
+                    language: String::new(),
+                    error: Error::Configuration(ConfigurationError {
+                        message: err.to_string(),
+                    }),
+                });
+                return Err(err);
+            }
+        };
+
+        if result.not_modified
+            || result
+                .content
+                .as_ref()
+                .is_none_or(|content| content.is_empty())
+        {
+            return Ok(());
+        }
+
+        let content = result.content.as_ref().expect("checked non-empty above");
+
+        let bundle = match parse_offline_zip(content) {
+            Ok(bundle) => bundle,
+            Err(err) => {
+                let error = Error::from(err);
+                self.emit_sync_failed(SyncFailedEvent {
+                    project: project.to_string(),
+                    language: String::new(),
+                    error: Error::Configuration(ConfigurationError {
+                        message: error.to_string(),
+                    }),
+                });
+                return Err(error);
+            }
+        };
+
+        let key = match resolve_project_key(&bundle, project) {
+            Ok(key) => key,
+            Err(err) => {
+                let error = Error::from(err);
+                self.emit_sync_failed(SyncFailedEvent {
+                    project: project.to_string(),
+                    language: String::new(),
+                    error: Error::Configuration(ConfigurationError {
+                        message: error.to_string(),
+                    }),
+                });
+                return Err(error);
+            }
+        };
+
+        if let Err(err) = apply_offline_bundle(&self.cache, project, &key, &bundle) {
+            let error = Error::from(err);
+            self.emit_sync_failed(SyncFailedEvent {
+                project: project.to_string(),
+                language: String::new(),
+                error: Error::Configuration(ConfigurationError {
+                    message: error.to_string(),
+                }),
+            });
+            return Err(error);
+        }
+
+        self.emit_sync_completed(SyncCompletedEvent {
+            project: project.to_string(),
+            language: String::new(),
+            synced_at: Utc::now(),
+        });
+        Ok(())
     }
 
     /// Runs an initial [`sync_all`], then repeats on the configured interval until cancelled.
