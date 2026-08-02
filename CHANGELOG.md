@@ -7,13 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `cachefile::parse_offline_zip`, `resolve_project_key`, and `OfflineBundle` for offline ZIP bundle parsing (HTTP spec §7.6).
-- `FileProvider::import_offline_bundle` to seed on-disk cache from ZIP bytes.
-- `SyncService::sync_from_offline_zip` to download and import an offline ZIP in one call.
-
-## [0.4.0-beta] - 2026-07-29
+## [0.4.0-beta] - 2026-08-02
 
 ### Changed
 
@@ -21,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `cachefile::parse_offline_zip`, `resolve_project_key`, and `OfflineBundle` for offline ZIP bundle parsing (HTTP spec §7.6).
+- `FileProvider::import_offline_bundle` to seed on-disk cache from ZIP bytes.
+- `SyncService::sync_from_offline_zip` to download and import an offline ZIP in one call.
 - Tag-driven release workflow (`release.yml`), crates.io publish, maintainer release scripts, and pinned install docs (#16).
 - Live API integration tests under `tests/integration/` (env-gated via `TRANSLAAS_API_KEY`, `integration` Cargo feature) (#14).
 - `make test-integration` target and optional `integration.yml` GitHub Actions workflow for manual runs.
