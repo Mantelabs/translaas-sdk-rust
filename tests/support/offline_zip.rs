@@ -2,6 +2,7 @@
 
 #![allow(dead_code)]
 
+use std::collections::BTreeMap;
 use std::io::{Cursor, Write};
 
 use chrono::Utc;
@@ -10,6 +11,7 @@ use zip::write::{FileOptions, ZipWriter};
 use zip::CompressionMethod;
 
 type ZipWriterCursor = ZipWriter<Cursor<Vec<u8>>>;
+type ZipEntries = BTreeMap<String, Vec<u8>>;
 
 fn minimal_manifest(projects: Value) -> Value {
     json!({
@@ -21,13 +23,29 @@ fn minimal_manifest(projects: Value) -> Value {
     })
 }
 
+fn put_zip_json(entries: &mut ZipEntries, name: &str, value: &Value) {
+    let payload = serde_json::to_vec(value).expect("marshal json");
+    entries.insert(name.to_string(), payload);
+}
+
+fn finish_zip_entries(entries: ZipEntries) -> Vec<u8> {
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+    for (name, payload) in entries {
+        write_zip_entry(&mut writer, &name, &payload).expect("zip entry");
+    }
+    writer.finish().expect("finish zip").into_inner()
+}
+
 pub fn build_test_offline_zip() -> Vec<u8> {
     build_test_offline_zip_with(|_| {})
 }
 
-pub fn build_test_offline_zip_with(mut mutate: impl FnMut(&mut ZipWriterCursor)) -> Vec<u8> {
-    let cursor = Cursor::new(Vec::new());
-    let mut writer = ZipWriter::new(cursor);
+/// Builds the standard demo offline ZIP, then lets `mutate` insert or replace entries by path.
+///
+/// Replacements are required on zip 8+, which rejects duplicate filenames in [`ZipWriter`].
+pub fn build_test_offline_zip_with(mut mutate: impl FnMut(&mut ZipEntries)) -> Vec<u8> {
+    let mut entries = ZipEntries::new();
 
     let manifest = json!({
         "version": "1.0",
@@ -42,29 +60,28 @@ pub fn build_test_offline_zip_with(mut mutate: impl FnMut(&mut ZipWriterCursor))
             }
         }
     });
-    write_zip_json(&mut writer, "manifest.json", &manifest).expect("manifest");
+    put_zip_json(&mut entries, "manifest.json", &manifest);
 
     let locales_wrapper = json!({
         "cachedAt": "2026-01-01T00:00:00Z",
         "data": { "locales": ["en", "de"] }
     });
-    write_zip_json(&mut writer, "demo-project/locales.json", &locales_wrapper).expect("locales");
+    put_zip_json(&mut entries, "demo-project/locales.json", &locales_wrapper);
 
     let en_project = json!({
         "cachedAt": "2026-01-01T00:00:00Z",
         "data": { "common": { "hello": "Hello" } }
     });
-    write_zip_json(&mut writer, "demo-project/en/project.json", &en_project).expect("en");
+    put_zip_json(&mut entries, "demo-project/en/project.json", &en_project);
 
     let de_project = json!({
         "cachedAt": "2026-01-01T00:00:00Z",
         "data": { "common": { "hello": "Hallo" } }
     });
-    write_zip_json(&mut writer, "demo-project/de/project.json", &de_project).expect("de");
+    put_zip_json(&mut entries, "demo-project/de/project.json", &de_project);
 
-    mutate(&mut writer);
-
-    writer.finish().expect("finish zip").into_inner()
+    mutate(&mut entries);
+    finish_zip_entries(entries)
 }
 
 pub fn write_zip_json(
@@ -81,7 +98,8 @@ pub fn write_zip_entry(
     name: &str,
     payload: &[u8],
 ) -> Result<(), zip::result::ZipError> {
-    let options = FileOptions::default().compression_method(CompressionMethod::Stored);
+    let options: FileOptions<'_, ()> =
+        FileOptions::default().compression_method(CompressionMethod::Stored);
     writer.start_file(name, options)?;
     writer.write_all(payload)?;
     Ok(())
