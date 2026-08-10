@@ -18,7 +18,7 @@ mod offline_zip;
 
 use offline_zip::{
     build_multi_project_zip, build_sanitized_folder_zip, build_test_offline_zip,
-    build_test_offline_zip_with, past_rfc3339, write_zip_entry, write_zip_json,
+    build_test_offline_zip_with, past_rfc3339,
 };
 
 fn new_test_provider() -> FileProvider {
@@ -69,8 +69,8 @@ fn parse_offline_zip_corrupt() {
 
 #[test]
 fn parse_offline_zip_zip_slip_rejected() {
-    let content = build_test_offline_zip_with(|writer| {
-        write_zip_entry(writer, "../evil.json", b"{}").expect("evil entry");
+    let content = build_test_offline_zip_with(|entries| {
+        entries.insert("../evil.json".to_string(), b"{}".to_vec());
     });
     let err = parse_offline_zip(&content).expect_err("zip slip");
     assert!(err.to_string().contains("unsafe ZIP entry"));
@@ -78,19 +78,16 @@ fn parse_offline_zip_zip_slip_rejected() {
 
 #[test]
 fn parse_offline_zip_unknown_manifest_version() {
-    let content = build_test_offline_zip_with(|writer| {
-        write_zip_json(
-            writer,
-            "manifest.json",
-            &json!({
-                "version": "9.9",
-                "sdkVersion": "1.0.0",
-                "createdAt": "2026-01-01T00:00:00Z",
-                "lastSyncAt": "2026-01-01T00:00:00Z",
-                "projects": {}
-            }),
-        )
+    let content = build_test_offline_zip_with(|entries| {
+        let payload = serde_json::to_vec(&json!({
+            "version": "9.9",
+            "sdkVersion": "1.0.0",
+            "createdAt": "2026-01-01T00:00:00Z",
+            "lastSyncAt": "2026-01-01T00:00:00Z",
+            "projects": {}
+        }))
         .expect("manifest");
+        entries.insert("manifest.json".to_string(), payload);
     });
 
     let bundle = parse_offline_zip(&content).expect("parse");
@@ -165,17 +162,14 @@ fn import_offline_bundle_round_trip() {
 
 #[test]
 fn import_offline_bundle_preserves_expiry() {
-    let content = build_test_offline_zip_with(|writer| {
-        write_zip_json(
-            writer,
-            "demo-project/en/project.json",
-            &json!({
-                "cachedAt": "2026-01-01T00:00:00Z",
-                "expiresAt": past_rfc3339(),
-                "data": { "common": { "hello": "Hello" } }
-            }),
-        )
+    let content = build_test_offline_zip_with(|entries| {
+        let payload = serde_json::to_vec(&json!({
+            "cachedAt": "2026-01-01T00:00:00Z",
+            "expiresAt": past_rfc3339(),
+            "data": { "common": { "hello": "Hello" } }
+        }))
         .expect("en project");
+        entries.insert("demo-project/en/project.json".to_string(), payload);
     });
 
     let provider = new_test_provider();
