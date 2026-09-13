@@ -7,8 +7,7 @@ updates:
       interval: 'weekly'
     open-pull-requests-limit: 10
     labels:
-      - 'dependencies'
-      - 'automated'
+      - 'type:chore'
     commit-message:
       prefix: 'chore'
       include: 'scope'
@@ -19,5 +18,10 @@ updates:
     schedule:
       interval: 'weekly'
     labels:
-      - 'github-actions'
-      - 'automated'
+      - 'type:chore'
+    # dtolnay/rust-toolchain refs such as @1.86.0 are rustc versions, not
+    # action versions. Dependabot treats them as semver and opens invalid
+    # bumps (for example #50: 1.86.0 -> 1.120.0). MSRV jobs pin the compiler
+    # via `with.toolchain` on @master instead.
+    ignore:
+      - dependency-name: 'dtolnay/rust-toolchain'
