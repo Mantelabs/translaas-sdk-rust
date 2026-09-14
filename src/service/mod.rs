@@ -7,29 +7,22 @@
 //!
 //! ```no_run
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use translaas::client::{Client, ClientBuilder};
-//! use translaas::service::{
-//!     DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
-//! };
+//! use translaas::{ClientBuilder, Service};
 //!
-//! let client = ClientBuilder::new()
+//! let translaas: Service<_> = ClientBuilder::new()
 //!     .base_url("https://api.example.com")
 //!     .api_key("key")
-//!     .build()?;
+//!     .default_project_id("my-project")
+//!     .default_language("en")
+//!     .build_service()?;
 //!
-//! let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
-//! let service = Service::new(client, ServiceOptions {
-//!     resolver: Some(resolver),
-//! });
-//!
-//! let text = service
-//!     .t("common", "welcome", TOptions::new().lang("de"))
-//!     .await?;
+//! let text = translaas.t_lang("common", "welcome", "de").await?;
 //! # let _ = text;
 //! # Ok(())
 //! # }
 //! ```
 
+mod client_builder;
 mod error;
 mod language;
 mod options;

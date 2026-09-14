@@ -357,10 +357,7 @@ mod tests {
                 Duration::from_secs(1),
             );
             assert!(err.is_transport(), "{message}");
-            assert!(
-                err.as_api().is_none(),
-                "{message} must not map to ApiError"
-            );
+            assert!(err.as_api().is_none(), "{message} must not map to ApiError");
         }
     }
 

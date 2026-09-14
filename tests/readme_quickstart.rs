@@ -7,31 +7,19 @@ fn readme_option_a_service_quickstart_compiles() {
     fn assert_send<T: Send>(_value: T) {}
 
     assert_send(async {
-        use translaas::cache::CacheMode;
-        use translaas::client::ClientBuilder;
-        use translaas::service::{
-            DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
-        };
+        use translaas::{ClientBuilder, Service};
 
-        let client = ClientBuilder::new()
+        let translaas: Service<_> = ClientBuilder::new()
             .api_key("test-key")
-            .base_url("https://sdk-api.translaas.local")
-            .default_project_id("test-project")
-            .cache_mode(CacheMode::Group)
-            .build()?;
+            .base_url("https://api.translaas.local")
+            .default_project_id("translaassdksamples")
+            .default_language("en")
+            .accept_invalid_certs(true)
+            .build_service()?;
 
-        let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
-        let service = Service::new(
-            client,
-            ServiceOptions {
-                resolver: Some(resolver),
-            },
-        );
-
-        let text = service
-            .t("ui", "button.save", TOptions::new().lang("en"))
-            .await?;
-        println!("{text}");
+        let text = translaas.t_lang("common", "welcome.message", "en").await?;
+        let also = translaas.t("common", "welcome.message").await?;
+        println!("{text}{also}");
         Ok::<(), Box<dyn std::error::Error>>(())
     });
 }

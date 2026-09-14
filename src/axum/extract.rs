@@ -31,7 +31,7 @@ where
         &self.0
     }
 
-    /// Calls [`Service::t`] merging the request [`LanguageContext`] from extensions when present.
+    /// Calls [`Service::t_with`] merging the request [`LanguageContext`] from extensions when present.
     pub async fn t(
         &self,
         parts: &Parts,
@@ -42,7 +42,7 @@ where
         if let Some(ctx) = parts.extensions.get::<LanguageContext>() {
             opts = opts.language_context(ctx.clone());
         }
-        self.0.t(group, entry, opts).await
+        self.0.t_with(group, entry, opts).await
     }
 }
 

@@ -28,3 +28,8 @@ pub mod axum;
 
 mod http;
 mod validate;
+
+pub use client::ClientBuilder;
+
+#[cfg(feature = "service")]
+pub use service::{Service, ServiceOptions, TOptions};

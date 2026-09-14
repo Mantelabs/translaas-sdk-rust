@@ -85,7 +85,7 @@ pub fn middleware<C>(
 /// # use translaas::service::{DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions};
 /// # fn demo(client: translaas::client::Client) -> Result<(), translaas::axum::MiddlewareError> {
 /// let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")]).unwrap();
-/// let base = Service::new(client, ServiceOptions { resolver: Some(resolver) });
+/// let base = Service::with_options(client, ServiceOptions { resolver: Some(resolver) });
 /// let state = Arc::new(middleware(MiddlewareOptions::with_base_service(base))?);
 /// // Router::new().layer(axum::middleware::from_fn_with_state(state.clone(), translaas_middleware))
 /// # let _ = state;

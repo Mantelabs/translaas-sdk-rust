@@ -29,6 +29,7 @@ struct MockClientState {
 
 struct MockClient {
     state: Arc<Mutex<MockClientState>>,
+    default_language: Option<String>,
     get_entry_fn: Option<
         Box<
             dyn Fn(
@@ -46,8 +47,13 @@ struct MockClient {
 
 impl MockClient {
     fn new() -> Arc<Self> {
+        Self::new_with_language(None)
+    }
+
+    fn new_with_language(lang: Option<&str>) -> Arc<Self> {
         Arc::new(Self {
             state: Arc::new(Mutex::new(MockClientState::default())),
+            default_language: lang.map(str::to_string),
             get_entry_fn: Some(Box::new(|_, _, _, _| {
                 Box::pin(async { Ok("hello".to_string()) })
             })),
@@ -159,6 +165,10 @@ impl TranslaasClient for MockClient {
             message: "unexpected validate_api_key".into(),
         }))
     }
+
+    fn default_language(&self) -> Option<&str> {
+        self.default_language.as_deref()
+    }
 }
 
 #[derive(Clone)]
@@ -167,6 +177,10 @@ struct SharedMockClient(Arc<MockClient>);
 impl SharedMockClient {
     fn new() -> Self {
         Self(MockClient::new())
+    }
+
+    fn with_default_language(lang: &str) -> Self {
+        Self(MockClient::new_with_language(Some(lang)))
     }
 
     fn get_entry_calls(&self) -> u32 {
@@ -243,6 +257,10 @@ impl TranslaasClient for SharedMockClient {
     async fn validate_api_key(&self) -> Result<ValidateApiKeyResponse, Error> {
         self.0.validate_api_key().await
     }
+
+    fn default_language(&self) -> Option<&str> {
+        self.0.default_language()
+    }
 }
 
 fn assert_no_language(err: ServiceError) {
@@ -256,17 +274,14 @@ fn assert_no_language(err: ServiceError) {
 async fn t_explicit_lang_bypasses_resolver() {
     let inner = SharedMockClient::new();
     let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")]).unwrap();
-    let service = Service::new(
+    let service = Service::with_options(
         inner.clone(),
         ServiceOptions {
             resolver: Some(resolver),
         },
     );
 
-    let got = service
-        .t("common", "welcome", TOptions::new().lang("de"))
-        .await
-        .unwrap();
+    let got = service.t_lang("common", "welcome", "de").await.unwrap();
 
     assert_eq!(got, "hello");
     assert_eq!(inner.last_lang(), "de");
@@ -276,7 +291,7 @@ async fn t_explicit_lang_bypasses_resolver() {
 async fn t_empty_lang_uses_resolver() {
     let inner = SharedMockClient::new();
     let resolver = LanguageResolver::new([DefaultLanguageProvider::new("es")]).unwrap();
-    let service = Service::new(
+    let service = Service::with_options(
         inner.clone(),
         ServiceOptions {
             resolver: Some(resolver),
@@ -284,7 +299,7 @@ async fn t_empty_lang_uses_resolver() {
     );
 
     service
-        .t("common", "welcome", TOptions::new().lang("   "))
+        .t_with("common", "welcome", TOptions::new().lang("   "))
         .await
         .unwrap();
 
@@ -294,12 +309,9 @@ async fn t_empty_lang_uses_resolver() {
 #[tokio::test]
 async fn t_no_resolver_no_lang() {
     let inner = SharedMockClient::new();
-    let service = Service::new(inner.clone(), ServiceOptions::default());
+    let service = Service::new(inner.clone());
 
-    let err = service
-        .t("common", "welcome", TOptions::new())
-        .await
-        .unwrap_err();
+    let err = service.t("common", "welcome").await.unwrap_err();
 
     assert_no_language(err);
     assert_eq!(inner.get_entry_calls(), 0);
@@ -308,7 +320,7 @@ async fn t_no_resolver_no_lang() {
 #[tokio::test]
 async fn t_forwards_get_entry_options() {
     let inner = SharedMockClient::new();
-    let service = Service::new(inner.clone(), ServiceOptions::default());
+    let service = Service::new(inner.clone());
 
     let mut request_context = RequestContext {
         project: Some("demo".into()),
@@ -318,7 +330,7 @@ async fn t_forwards_get_entry_options() {
     params.insert("name".into(), "Ada".into());
 
     service
-        .t(
+        .t_with(
             "common",
             "items",
             TOptions::new()
@@ -349,7 +361,7 @@ async fn t_resolver_from_context() {
         Arc::new(DefaultLanguageProvider::new("en")),
     ])
     .unwrap();
-    let service = Service::new(
+    let service = Service::with_options(
         inner.clone(),
         ServiceOptions {
             resolver: Some(resolver),
@@ -357,7 +369,7 @@ async fn t_resolver_from_context() {
     );
 
     service
-        .t(
+        .t_with(
             "common",
             "welcome",
             TOptions::new().language_context(LanguageContext::new().with_language("pt")),
@@ -372,7 +384,7 @@ async fn t_resolver_from_context() {
 async fn with_prepended_providers() {
     let inner = SharedMockClient::new();
     let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")]).unwrap();
-    let base = Service::new(
+    let base = Service::with_options(
         inner.clone(),
         ServiceOptions {
             resolver: Some(resolver),
@@ -383,12 +395,51 @@ async fn with_prepended_providers() {
         .with_prepended_providers([DefaultLanguageProvider::new("de")])
         .unwrap();
 
-    scoped
-        .t("common", "welcome", TOptions::new())
-        .await
-        .unwrap();
+    scoped.t("common", "welcome").await.unwrap();
     assert_eq!(inner.last_lang(), "de");
 
-    base.t("common", "welcome", TOptions::new()).await.unwrap();
+    base.t("common", "welcome").await.unwrap();
     assert_eq!(inner.last_lang(), "en");
+}
+
+#[tokio::test]
+async fn t_lang_bypasses_resolver() {
+    let inner = SharedMockClient::with_default_language("en");
+    let service = Service::new(inner.clone());
+
+    service.t_lang("common", "welcome", "fr").await.unwrap();
+    assert_eq!(inner.last_lang(), "fr");
+}
+
+#[tokio::test]
+async fn t_two_arg_uses_default_language() {
+    let inner = SharedMockClient::with_default_language("en");
+    let service = Service::new(inner.clone());
+
+    service.t("common", "welcome").await.unwrap();
+    assert_eq!(inner.last_lang(), "en");
+}
+
+#[tokio::test]
+async fn service_new_without_resolver_with_default_language() {
+    let inner = SharedMockClient::with_default_language("de");
+    let service = Service::new(inner.clone());
+
+    service.t("g", "e").await.unwrap();
+    assert_eq!(inner.last_lang(), "de");
+}
+
+#[tokio::test]
+async fn custom_resolver_overrides_client_default_language() {
+    let inner = SharedMockClient::with_default_language("en");
+    let resolver = LanguageResolver::new([DefaultLanguageProvider::new("es")]).unwrap();
+    let service = Service::with_options(
+        inner.clone(),
+        ServiceOptions {
+            resolver: Some(resolver),
+        },
+    );
+
+    service.t("common", "welcome").await.unwrap();
+    assert_eq!(inner.last_lang(), "es");
 }
