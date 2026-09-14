@@ -65,12 +65,7 @@ pub(crate) fn map_transport_failure(failure: TransportFailure, timeout: Duration
                 response_content: None,
             })
         }
-        TransportFailure::Other(message) => Error::Api(ApiError {
-            status_code: StatusCode::BAD_REQUEST.as_u16(),
-            code: None,
-            message: Some(format!("Failed to retrieve translation: {message}")),
-            response_content: None,
-        }),
+        TransportFailure::Other(message) => Error::Transport { message },
     }
 }
 
@@ -329,6 +324,44 @@ mod tests {
     fn map_canceled() {
         let err = map_transport_failure(TransportFailure::Canceled, Duration::from_secs(1));
         assert!(err.is_canceled());
+    }
+
+    #[test]
+    fn map_transport_other_yields_transport_error() {
+        let err = map_transport_failure(
+            TransportFailure::Other("error sending request for url (http://127.0.0.1:1/)".into()),
+            Duration::from_secs(1),
+        );
+        assert!(err.is_transport());
+        assert!(err.as_api().is_none());
+        match err {
+            Error::Transport { message } => {
+                assert!(message.contains("error sending request"));
+                assert!(!message.contains("Failed to retrieve translation"));
+            }
+            other => panic!("expected Transport, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn map_transport_connect_message_not_bad_request() {
+        for message in [
+            "connection refused",
+            "dns error: failed to lookup address information",
+            "error sending request: client error (Connect)",
+            "invalid peer certificate: UnknownIssuer",
+            "tls handshake eof",
+        ] {
+            let err = map_transport_failure(
+                TransportFailure::Other(message.into()),
+                Duration::from_secs(1),
+            );
+            assert!(err.is_transport(), "{message}");
+            assert!(
+                err.as_api().is_none(),
+                "{message} must not map to ApiError"
+            );
+        }
     }
 
     #[test]

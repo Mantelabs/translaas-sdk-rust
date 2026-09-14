@@ -134,6 +134,7 @@ async fn do_probe(cfg: &Config) -> bool {
 
     match client.validate_api_key().await {
         Ok(_) => true,
+        Err(Error::Transport { .. }) => false,
         Err(Error::Api(api)) if api.status_code == 401 || api.status_code == 403 => true,
         Err(Error::Api(api)) if is_transport_failure(&api) => false,
         Err(err) => {
@@ -143,7 +144,8 @@ async fn do_probe(cfg: &Config) -> bool {
                 || msg.contains("actively refused")
                 || msg.contains("dns error")
                 || msg.contains("failed to connect")
-                || msg.contains("error sending request"))
+                || msg.contains("error sending request")
+                || msg.contains("transport error"))
         }
     }
 }

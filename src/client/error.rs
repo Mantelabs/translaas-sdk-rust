@@ -10,9 +10,12 @@ pub enum Error {
     /// Invalid client options or call arguments.
     #[error(transparent)]
     Configuration(#[from] ConfigurationError),
-    /// Non-success HTTP response or mapped transport failure.
+    /// Non-success HTTP response or timeout mapped to status 408.
     #[error(transparent)]
     Api(#[from] ApiError),
+    /// Connect, TLS, DNS, or other send failure (not an HTTP status from the API).
+    #[error("transport error: {message}")]
+    Transport { message: String },
     /// Offline cache I/O or deserialization failure.
     #[error(transparent)]
     OfflineCache(Box<OfflineCacheError>),
@@ -36,6 +39,11 @@ impl Error {
     /// Returns true when the error is a user/request cancellation.
     pub fn is_canceled(&self) -> bool {
         matches!(self, Self::Canceled)
+    }
+
+    /// Returns true when the error is a connect/TLS/DNS (or similar) send failure.
+    pub fn is_transport(&self) -> bool {
+        matches!(self, Self::Transport { .. })
     }
 
     /// Returns the offline cache miss error when this is an [`Error::OfflineCacheMiss`] variant.
