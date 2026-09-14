@@ -36,6 +36,7 @@ pub struct Client {
     pub(crate) base_url: String,
     pub(crate) timeout: Duration,
     pub(crate) default_project_id: Option<String>,
+    pub(crate) default_language: Option<String>,
     pub(crate) http_client: reqwest::Client,
     /// Active when [`CacheMode`](crate::cache::CacheMode) is not `None`.
     #[cfg(feature = "cache")]
@@ -65,5 +66,10 @@ impl Client {
     /// Default project id when set.
     pub fn default_project_id(&self) -> Option<&str> {
         self.default_project_id.as_deref()
+    }
+
+    /// Default locale for convenience `Service` resolution. Not an HTTP query default.
+    pub fn default_language(&self) -> Option<&str> {
+        self.default_language.as_deref()
     }
 }

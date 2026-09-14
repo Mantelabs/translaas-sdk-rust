@@ -20,9 +20,7 @@ use translaas::models::{
     ConfigurationError, OfflineCacheDownloadResult, ProjectLocales, ReportMissingKeyItem,
     TranslationGroup, TranslationProject, ValidateApiKeyResponse,
 };
-use translaas::service::{
-    DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
-};
+use translaas::service::{DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions};
 
 #[derive(Default)]
 struct MockClientState {
@@ -183,7 +181,7 @@ impl TranslaasClient for SharedMockClient {
 
 fn base_service(client: SharedMockClient) -> Service<SharedMockClient> {
     let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")]).expect("resolver");
-    Service::new(
+    Service::with_options(
         client,
         ServiceOptions {
             resolver: Some(resolver),
@@ -206,15 +204,12 @@ fn app_with_middleware(client: SharedMockClient) -> Router {
 }
 
 async fn handler(Translaas(service): Translaas<SharedMockClient>) -> String {
-    service
-        .t("ui", "welcome", TOptions::new())
-        .await
-        .expect("translation")
+    service.t("ui", "welcome").await.expect("translation")
 }
 
 async fn handler_with_explicit_lang(Translaas(service): Translaas<SharedMockClient>) -> String {
     service
-        .t("ui", "welcome", TOptions::new().lang("pt"))
+        .t_lang("ui", "welcome", "pt")
         .await
         .expect("translation")
 }

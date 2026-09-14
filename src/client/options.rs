@@ -21,6 +21,12 @@ pub struct ClientOptions {
     pub timeout: Option<Duration>,
     /// Default `project` query value for text lookups when request context omits it.
     pub default_project_id: Option<String>,
+    /// Default locale for convenience Service resolution. Not sent as an HTTP query param.
+    pub default_language: Option<String>,
+    /// When true, the internal `reqwest` client accepts invalid TLS certificates.
+    ///
+    /// Dev-only (local `*.translaas.local`). Ignored when a custom `http_client` is supplied.
+    pub accept_invalid_certs: bool,
     /// In-memory cache mode. Default [`CacheMode::None`] disables caching.
     #[cfg(feature = "cache")]
     pub cache_mode: CacheMode,

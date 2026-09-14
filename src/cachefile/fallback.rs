@@ -9,7 +9,7 @@ use crate::client::Error;
 pub(crate) fn is_network_or_api_error(err: &Error) -> bool {
     match err {
         Error::Canceled => false,
-        Error::Api(_) => true,
+        Error::Api(_) | Error::Transport { .. } => true,
         Error::Configuration(_) | Error::OfflineCache(_) | Error::OfflineCacheMiss(_) => false,
     }
 }
@@ -32,6 +32,14 @@ mod tests {
             message: Some("bad gateway".to_string()),
             response_content: None,
         });
+        assert!(is_network_or_api_error(&err));
+    }
+
+    #[test]
+    fn transport_error_is_eligible() {
+        let err = Error::Transport {
+            message: "connection refused".into(),
+        };
         assert!(is_network_or_api_error(&err));
     }
 

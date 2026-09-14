@@ -4,7 +4,7 @@ use crate::client::{GetEntryOptions, TranslaasClient};
 use crate::models::NoLanguageError;
 
 use super::error::Error;
-use super::language::{LanguageProvider, LanguageResolver};
+use super::language::{DefaultLanguageProvider, LanguageProvider, LanguageResolver};
 use super::options::{ServiceOptions, TOptions};
 
 /// Convenience translation API with optional automatic language resolution.
@@ -25,13 +25,25 @@ impl<C> std::fmt::Debug for Service<C> {
 impl<C: TranslaasClient> Service<C> {
     /// Constructs a service wrapping any [`TranslaasClient`] implementation.
     ///
+    /// When the client has [`TranslaasClient::default_language`], a
+    /// [`DefaultLanguageProvider`] is attached automatically. For a custom resolver chain,
+    /// use [`Self::with_options`].
+    ///
     /// Share the inner client with other decorators by wrapping it in [`std::sync::Arc`]
     /// before constructing multiple wrappers around the same HTTP client.
-    pub fn new(client: C, options: ServiceOptions) -> Self {
-        Self {
-            client,
-            resolver: options.resolver,
-        }
+    pub fn new(client: C) -> Self {
+        Self::with_options(client, ServiceOptions::default())
+    }
+
+    /// Constructs a service with an explicit resolver (or none).
+    ///
+    /// If `options.resolver` is `None`, falls back to [`TranslaasClient::default_language`].
+    pub fn with_options(client: C, options: ServiceOptions) -> Self {
+        let resolver = match options.resolver {
+            Some(resolver) => Some(resolver),
+            None => resolver_from_default_language(&client),
+        };
+        Self { client, resolver }
     }
 
     /// Returns a new service sharing the client with request-scoped providers tried first.
@@ -53,8 +65,26 @@ impl<C: TranslaasClient> Service<C> {
         })
     }
 
-    /// Retrieves a single translation with optional automatic language resolution.
-    pub async fn t(
+    /// Retrieves a translation using automatic language resolution.
+    pub async fn t(&self, group: &str, entry: &str) -> Result<String, Error> {
+        self.t_with(group, entry, TOptions::new()).await
+    }
+
+    /// Retrieves a translation with an explicit language.
+    ///
+    /// Non-empty `lang` bypasses the resolver. Empty or whitespace-only values fall back
+    /// to automatic resolution (same as [`TOptions::lang`]).
+    pub async fn t_lang(
+        &self,
+        group: &str,
+        entry: &str,
+        lang: impl Into<String>,
+    ) -> Result<String, Error> {
+        self.t_with(group, entry, TOptions::new().lang(lang)).await
+    }
+
+    /// Retrieves a translation with extras (plural count, parameters, request context).
+    pub async fn t_with(
         &self,
         group: &str,
         entry: &str,
@@ -76,6 +106,14 @@ impl<C: TranslaasClient> Service<C> {
 
         resolver.resolve(&opts.language_context)
     }
+}
+
+fn resolver_from_default_language<C: TranslaasClient>(client: &C) -> Option<LanguageResolver> {
+    let lang = client.default_language()?.trim();
+    if lang.is_empty() {
+        return None;
+    }
+    LanguageResolver::new([DefaultLanguageProvider::new(lang)]).ok()
 }
 
 fn build_get_entry_options<'a>(opts: &mut TOptions<'a>) -> GetEntryOptions<'a> {

@@ -1,6 +1,4 @@
-use translaas::service::{
-    DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
-};
+use translaas::service::Service;
 
 use crate::common::{
     integration_client_builder, require_integration_config, soft_skip_if,
@@ -16,24 +14,14 @@ async fn service_t_explicit_language() {
     let client = integration_client_builder(&cfg, std::time::Duration::from_secs(30))
         .api_key(&cfg.api_key)
         .base_url(&cfg.base_url)
+        .default_language(FIXTURE_LANG)
         .build()
         .expect("client");
 
-    let resolver =
-        LanguageResolver::new([DefaultLanguageProvider::new(FIXTURE_LANG)]).expect("resolver");
-    let service = Service::new(
-        client,
-        ServiceOptions {
-            resolver: Some(resolver),
-        },
-    );
+    let service = Service::new(client);
 
     let got = match service
-        .t(
-            FIXTURE_GROUP,
-            FIXTURE_ENTRY_SAVE,
-            TOptions::new().lang(FIXTURE_LANG),
-        )
+        .t_lang(FIXTURE_GROUP, FIXTURE_ENTRY_SAVE, FIXTURE_LANG)
         .await
     {
         Ok(v) => v,

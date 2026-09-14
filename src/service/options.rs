@@ -1,4 +1,5 @@
-//! Options for [`super::Service`] and [`super::Service::t`].
+//! Options for [`super::Service`], [`super::Service::t`], [`super::Service::t_lang`],
+//! and [`super::Service::t_with`].
 
 use std::collections::HashMap;
 
@@ -20,7 +21,7 @@ pub struct ServiceOptions {
     pub resolver: Option<super::language::LanguageResolver>,
 }
 
-/// Per-call options for [`super::Service::t`].
+/// Per-call options for [`super::Service::t_with`].
 #[derive(Debug)]
 pub struct TOptions<'a> {
     lang: LangChoice,

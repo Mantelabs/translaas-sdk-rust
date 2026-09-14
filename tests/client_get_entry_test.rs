@@ -320,3 +320,26 @@ async fn get_entry_timeout_maps_to_408() {
     assert_eq!(api.status_code, 408);
     assert!(api.message.as_deref().unwrap_or("").contains("timed out"));
 }
+
+#[tokio::test]
+async fn get_entry_connection_refused_maps_to_transport() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind ephemeral port");
+    let addr = listener.local_addr().expect("local addr");
+    drop(listener);
+
+    let client = Client::builder()
+        .api_key("test-api-key")
+        .base_url(format!("http://{addr}"))
+        .timeout(Duration::from_secs(5))
+        .build()
+        .unwrap();
+
+    let err = client
+        .get_entry("ui", "entry", "en", GetEntryOptions::new())
+        .await
+        .expect_err("connection refused");
+    assert!(err.is_transport(), "got {err:?}");
+    assert!(err.as_api().is_none());
+}

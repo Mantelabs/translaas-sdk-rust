@@ -18,7 +18,7 @@ exclude = ["/.github/", "/scripts/", "/target/"]
 all-features = true
 
 [features]
-default = ["cache"]
+default = ["cache", "service"]
 cache = []
 offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util", "dep:zip"]
 service = []
@@ -48,6 +48,10 @@ http-body-util = "0.1"
 
 [[test]]
 name = "readme_quickstart"
+required-features = ["service"]
+
+[[test]]
+name = "client_builder_convenience_test"
 required-features = ["service"]
 
 [[test]]

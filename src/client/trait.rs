@@ -58,6 +58,11 @@ pub trait TranslaasClient: Send + Sync {
 
     /// Validates the configured API key.
     async fn validate_api_key(&self) -> Result<ValidateApiKeyResponse, Error>;
+
+    /// Default locale for convenience `Service` resolution. Decorators should forward the inner value.
+    fn default_language(&self) -> Option<&str> {
+        None
+    }
 }
 
 impl TranslaasClient for Client {
@@ -112,6 +117,10 @@ impl TranslaasClient for Client {
 
     async fn validate_api_key(&self) -> Result<ValidateApiKeyResponse, Error> {
         Client::validate_api_key(self).await
+    }
+
+    fn default_language(&self) -> Option<&str> {
+        Client::default_language(self)
     }
 }
 

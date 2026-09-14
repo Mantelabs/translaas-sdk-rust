@@ -5,7 +5,8 @@ use thiserror::Error;
 use crate::client;
 use crate::models::NoLanguageError;
 
-/// Errors from [`super::Service::t`](super::Service::t) and related helpers.
+/// Errors from [`super::Service::t`], [`super::Service::t_lang`], [`super::Service::t_with`],
+/// and related helpers.
 #[derive(Debug, Error)]
 pub enum Error {
     /// Language resolution yielded no language.

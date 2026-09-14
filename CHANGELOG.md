@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ClientBuilder::default_language` and `ClientBuilder::accept_invalid_certs` (dev-only TLS for local Docker).
+- `ClientBuilder::build_service()` and crate-root re-exports (`ClientBuilder`, `Service`, `TOptions`) when the `service` feature is on.
+- `Service::t(group, entry)` and `Service::t_lang(group, entry, lang)` for the getting-started path.
+- `client::Error::Transport` for connect/TLS/DNS failures (distinct from HTTP API errors).
+
 ### Changed
 
+- **Breaking:** `Service::new` now takes only the client. Use `Service::with_options` for a custom `LanguageResolver`.
+- **Breaking:** `Service::t(..., TOptions)` is renamed to `Service::t_with`.
+- **Breaking:** connect/TLS/DNS failures are `Error::Transport`, not `ApiError` with status 400. Timeouts remain 408-shaped `Api`.
+- Default Cargo features are now `cache` **and** `service` (`offline` and `axum` stay opt-in). Use `default-features = false` for a client-only build.
 - Optional `zip` dependency (offline feature) bumped from **0.6** to **8** (`zip-rs/zip2`).
 
 ## [0.4.0-beta] - 2026-08-02

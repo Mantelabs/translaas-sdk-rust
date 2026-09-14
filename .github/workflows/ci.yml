@@ -99,7 +99,7 @@ jobs:
         run: cargo test --workspace --no-default-features
 
       - name: README quickstart compile check
-        run: cargo test --test readme_quickstart --features service
+        run: cargo test --test readme_quickstart
 
   build:
     name: Build (${{ matrix.os }})

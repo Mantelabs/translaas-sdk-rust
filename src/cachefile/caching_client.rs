@@ -446,6 +446,10 @@ where
     async fn validate_api_key(&self) -> Result<ValidateApiKeyResponse, Error> {
         self.inner.validate_api_key().await
     }
+
+    fn default_language(&self) -> Option<&str> {
+        self.inner.default_language()
+    }
 }
 
 fn entry_miss_error(project: &str, lang: &str, group: &str, entry: &str) -> Error {

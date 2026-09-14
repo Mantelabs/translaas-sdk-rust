@@ -57,6 +57,24 @@ impl ClientBuilder {
         self
     }
 
+    /// Sets the default locale used by the convenience Service when no explicit lang is given.
+    ///
+    /// Empty or whitespace-only values clear the default. This is not sent as an HTTP query param.
+    pub fn default_language(mut self, language: impl Into<String>) -> Self {
+        self.options.default_language = Some(language.into());
+        self
+    }
+
+    /// Accept invalid TLS certificates on the internal HTTP client.
+    ///
+    /// **Dev-only** — for local Docker (`https://api.translaas.local` with self-signed certs).
+    /// Do not enable in production. Ignored when [`Self::http_client`] is set (the custom
+    /// client owns TLS).
+    pub fn accept_invalid_certs(mut self, accept: bool) -> Self {
+        self.options.accept_invalid_certs = accept;
+        self
+    }
+
     /// Supplies a custom [`reqwest::Client`] (primarily for tests).
     pub fn http_client(mut self, http_client: reqwest::Client) -> Self {
         self.http_client = Some(http_client);
@@ -93,6 +111,12 @@ impl ClientBuilder {
             .default_project_id
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty());
+        let default_language = self
+            .options
+            .default_language
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        let accept_invalid_certs = self.options.accept_invalid_certs;
 
         let configured_timeout = self.options.timeout;
         validate::client(ValidateOptions {
@@ -111,6 +135,7 @@ impl ClientBuilder {
             None => reqwest::Client::builder()
                 .use_rustls_tls()
                 .timeout(timeout)
+                .danger_accept_invalid_certs(accept_invalid_certs)
                 .build()
                 .map_err(|err| ConfigurationError {
                     message: format!("failed to build HTTP client: {err}"),
@@ -122,6 +147,7 @@ impl ClientBuilder {
             base_url,
             timeout,
             default_project_id,
+            default_language,
             http_client,
             #[cfg(feature = "cache")]
             cache_mode: self.options.cache_mode,
@@ -147,6 +173,8 @@ impl ClientBuilder {
         let api_key = self.options.api_key.clone();
         let base_url = self.options.base_url.clone();
         let configured_timeout = self.options.timeout;
+        let default_language = self.options.default_language.clone();
+        let accept_invalid_certs = self.options.accept_invalid_certs;
         let http_client = self.http_client.clone();
         #[cfg(feature = "cache")]
         let cache_mode = self.options.cache_mode;
@@ -164,7 +192,11 @@ impl ClientBuilder {
         let mut builder = ClientBuilder::new()
             .api_key(api_key)
             .base_url(base_url)
-            .default_project_id(project_id);
+            .default_project_id(project_id)
+            .accept_invalid_certs(accept_invalid_certs);
+        if let Some(language) = default_language {
+            builder = builder.default_language(language);
+        }
         if let Some(timeout) = configured_timeout {
             builder = builder.timeout(timeout);
         }
@@ -194,4 +226,41 @@ fn resolve_cache_provider(
         override_provider
             .unwrap_or_else(|| default_cache_provider(cache_mode).expect("non-none mode")),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_language_is_retained_on_build() {
+        let client = ClientBuilder::new()
+            .api_key("key")
+            .base_url("https://example.com")
+            .default_language("  de  ")
+            .build()
+            .unwrap();
+        assert_eq!(client.default_language(), Some("de"));
+    }
+
+    #[test]
+    fn default_language_whitespace_clears() {
+        let client = ClientBuilder::new()
+            .api_key("key")
+            .base_url("https://example.com")
+            .default_language("   ")
+            .build()
+            .unwrap();
+        assert_eq!(client.default_language(), None);
+    }
+
+    #[test]
+    fn accept_invalid_certs_builder_succeeds() {
+        ClientBuilder::new()
+            .api_key("k")
+            .base_url("https://example.com")
+            .accept_invalid_certs(true)
+            .build()
+            .expect("internal reqwest client should build with danger_accept_invalid_certs");
+    }
 }

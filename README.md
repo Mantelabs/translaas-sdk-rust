@@ -28,27 +28,27 @@ When developing from a `translaas-all` checkout:
 
 ```toml
 [dependencies]
-translaas = { path = "../../sdk/rust", features = ["service"] }
+translaas = { path = "../../sdk/rust" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-Enable additional layers with Cargo features: `offline`, `service`, `axum` (see [Cargo features](#cargo-features)).
+Enable additional layers with Cargo features: `offline`, `axum` (see [Cargo features](#cargo-features)). For a client-only build without the convenience `Service`, use `default-features = false` (and re-enable `cache` if you still want in-memory caching).
 
 ### crates.io
 
 Pin to a semver release (recommended for production):
 
 ```bash
-cargo add translaas@=0.4.0-beta --features service
+cargo add translaas@=0.4.0-beta
 ```
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", features = ["service"] }
+translaas = { version = "=0.4.0-beta" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-Enable additional layers with Cargo features: `offline`, `service`, `axum` (see [Cargo features](#cargo-features)).
+Enable additional layers with Cargo features: `offline`, `axum` (see [Cargo features](#cargo-features)).
 
 - [crates.io/translaas](https://crates.io/crates/translaas)
 - [docs.rs/translaas](https://docs.rs/translaas)
@@ -294,41 +294,35 @@ ZIP layout follows HTTP spec [§7.6](https://github.com/Mantelabs/translaas-all/
 
 Optional callbacks (`SyncCallbacks`) mirror Go hooks; adapt to channels by forwarding [`SyncEvent`](src/cachefile/sync_events.rs) variants from `on_sync_*` handlers.
 
-### Convenience `t()` API (`service`)
+### Convenience `t()` API (`service`, on by default)
 
-Enable the `service` feature for a thin wrapper over `get_entry` with automatic language resolution:
+`service` is included in default features (`cargo add translaas` is enough). Wrap `get_entry` with automatic language resolution:
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", features = ["service"] }
+translaas = { version = "=0.4.0-beta" }
 ```
 
 ```rust
-use translaas::client::{Client, ClientBuilder};
-use translaas::service::{
-    DefaultLanguageProvider, LanguageContext, LanguageResolver, Service, ServiceOptions,
-    TOptions,
-};
+use translaas::{ClientBuilder, Service, TOptions};
+use translaas::service::LanguageContext;
 
 # async fn example() -> Result<(), translaas::service::Error> {
-let client = ClientBuilder::new()
+let translaas: Service<_> = ClientBuilder::new()
     .api_key(std::env::var("TRANSLAAS_API_KEY")?)
     .default_project_id("demo-project")
-    .build()?;
-
-let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
-let service = Service::new(client, ServiceOptions {
-    resolver: Some(resolver),
-});
+    .default_language("en")
+    .build_service()?;
 
 // Explicit language bypasses the resolver chain.
-let text = service
-    .t("common", "welcome", TOptions::new().lang("de"))
-    .await?;
+let text = translaas.t_lang("common", "welcome", "de").await?;
 
-// Automatic resolution uses LanguageContext (Axum #13 will populate this per request).
-let text = service
-    .t(
+// Two-arg `t` uses default_language / LanguageResolver.
+let text = translaas.t("common", "welcome").await?;
+
+// Extras (plurals, parameters, request-scoped language) stay on TOptions.
+let text = translaas
+    .t_with(
         "common",
         "welcome",
         TOptions::new().language_context(LanguageContext::new().with_language("pt")),
@@ -340,6 +334,14 @@ let text = service
 ```
 
 When no resolver is configured and no explicit language is set, `t()` returns [`NoLanguageError`](src/models/errors.rs) — never an HTTP/API error. Provider failures in the chain are skipped silently (Go logs warnings; Rust has no logging dependency on `service`).
+
+Connect/TLS/DNS failures are [`client::Error::Transport`](src/client/error.rs), not HTTP 400. Timeouts remain 408-shaped `Api` errors.
+
+`ClientBuilder::build_service()` returns `Service<Client>`. Offline wrap stays separate: construct `CachingClient` first, then `Service::new(caching_client)` (this crate does not collapse `cachefile` into `Service`).
+
+For local Docker (`https://api.translaas.local`) with self-signed certs, call `.accept_invalid_certs(true)` on the builder (**dev-only** — do not enable in production). Hello-world does not need a direct `reqwest` dependency.
+
+Use the **project slug** as `default_project_id` (copy from Admin or `GET /api/v1/api-keys/validate`). Local dogfood slug is `translaassdksamples`; the display name `translaas-sdk-samples` is not the API id.
 
 Context cancellation before resolve (`context.Canceled` parity) is deferred until the client exposes an explicit cancel handle on `get_entry`.
 
@@ -362,13 +364,10 @@ use std::sync::Arc;
 use axum::{Router, routing::get, middleware::from_fn_with_state};
 use translaas::axum::{middleware, translaas_middleware, MiddlewareOptions, Translaas};
 use translaas::client::ClientBuilder;
-use translaas::service::{
-    DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
-};
 
 async fn welcome(Translaas(service): Translaas<translaas::client::Client>) -> String {
     service
-        .t("ui", "welcome", TOptions::new())
+        .t("ui", "welcome")
         .await
         .unwrap_or_else(|err| err.to_string())
 }
@@ -377,10 +376,10 @@ async fn welcome(Translaas(service): Translaas<translaas::client::Client>) -> St
 let client = ClientBuilder::new()
     .api_key(std::env::var("TRANSLAAS_API_KEY")?)
     .base_url(std::env::var("TRANSLAAS_BASE_URL").unwrap_or_else(|_| "https://api.translaas.local".into()))
+    .default_language("en")
     .build()?;
 
-let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
-let base = Service::new(client, ServiceOptions { resolver: Some(resolver) });
+let base = translaas::Service::new(client);
 let state = Arc::new(middleware(MiddlewareOptions::with_base_service(base))?);
 
 let app = Router::new()
@@ -402,34 +401,35 @@ Translation strings returned by the SDK are **not HTML-escaped**. When rendering
 
 ## Quick start
 
-### Option A — `service::Service` (recommended)
+### Option A — `Service` (recommended)
 
 ```rust
 use translaas::cache::CacheMode;
-use translaas::client::ClientBuilder;
-use translaas::service::{
-    DefaultLanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
-};
+use translaas::{ClientBuilder, Service};
 
-# async fn example() -> Result<(), Box<dyn std::error::Error>> {
-let client = ClientBuilder::new()
-    .api_key(std::env::var("TRANSLAAS_API_KEY")?)
-    .base_url(std::env::var("TRANSLAAS_BASE_URL").unwrap_or_else(|_| "https://sdk-api.translaas.local".into()))
-    .default_project_id(std::env::var("TRANSLAAS_DEFAULT_PROJECT").unwrap_or_else(|_| "test-project".into()))
-    .cache_mode(CacheMode::Group)
-    .build()?;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let translaas: Service<_> = ClientBuilder::new()
+        .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+        .base_url(
+            std::env::var("TRANSLAAS_BASE_URL")
+                .unwrap_or_else(|_| "https://api.translaas.local".into()),
+        )
+        .default_project_id(
+            std::env::var("TRANSLAAS_DEFAULT_PROJECT")
+                .unwrap_or_else(|_| "translaassdksamples".into()),
+        )
+        .default_language("en")
+        .cache_mode(CacheMode::Group)
+        .accept_invalid_certs(true) // DEV ONLY — local *.translaas.local
+        .build_service()?;
 
-let resolver = LanguageResolver::new([DefaultLanguageProvider::new("en")])?;
-let service = Service::new(client, ServiceOptions {
-    resolver: Some(resolver),
-});
-
-let text = service
-    .t("ui", "button.save", TOptions::new().lang("en"))
-    .await?;
-println!("{text}");
-# Ok(())
-# }
+    let text = translaas
+        .t_lang("common", "welcome.message", "en")
+        .await?;
+    println!("{text}");
+    Ok(())
+}
 ```
 
 See also: [`examples/rust/basic`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic).
@@ -476,13 +476,20 @@ The text endpoint returns **plain text** (`Accept: text/plain`), **not** a JSON 
 |---------|---------|---------|
 | `cache` | yes | In-memory cache layer (`translaas::cache`) |
 | `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache` |
-| `service` | no | Convenience `t()` helper (`translaas::service`) |
+| `service` | **yes** | Convenience `t()` helper (`translaas::service`) |
 | `axum` | no | Axum extractors / helpers; implies `service` |
 | `integration` | no | **Test-only** — live API integration harness (`make test-integration`) |
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", features = ["cache"] }
+translaas = { version = "=0.4.0-beta" }
+```
+
+Client-only (no `Service`):
+
+```toml
+[dependencies]
+translaas = { version = "=0.4.0-beta", default-features = false, features = ["cache"] }
 ```
 
 ## Development
