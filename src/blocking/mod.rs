@@ -10,8 +10,30 @@
 //! returns [`crate::client::Error::BlockingInAsyncContext`] instead of deadlocking.
 //! Nested sync calls on the same driver are not supported (Tokio cannot nest
 //! `block_on`); prefer a single `t()` / `get_entry()` per lookup.
+//!
+//! ```no_run
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let client = translaas::blocking::ClientBuilder::new()
+//!         .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+//!         .base_url("https://api.translaas.local")
+//!         .default_project_id("translaassdksamples")
+//!         .build()?;
+//!     let text = client.get_entry(
+//!         "common",
+//!         "welcome.message",
+//!         "en",
+//!         translaas::client::GetEntryOptions::new(),
+//!     )?;
+//!     println!("{text}");
+//!     Ok(())
+//! }
+//! ```
 
+mod builder;
+mod client;
 mod runtime;
 
-#[allow(unused_imports)] // used by Client/Service wrappers
+pub use builder::ClientBuilder;
+pub use client::Client;
+
 pub(crate) use runtime::BlockingDriver;
