@@ -19,7 +19,18 @@ fn readme_option_a_service_quickstart_compiles() {
 
         let text = translaas.t_lang("common", "welcome.message", "en").await?;
         let also = translaas.t("common", "welcome.message").await?;
-        println!("{text}{also}");
+        let greeting = translaas
+            .t_params("messages", "hello", [("name", "Ada")])
+            .await?;
+        let items = translaas.t_params("messages", "item", 5).await?;
+        let german = translaas
+            .t_params(
+                "messages",
+                "hello",
+                translaas::TParams::new().lang("de").param("name", "Ada"),
+            )
+            .await?;
+        println!("{text}{also}{greeting}{items}{german}");
         Ok::<(), Box<dyn std::error::Error>>(())
     });
 }

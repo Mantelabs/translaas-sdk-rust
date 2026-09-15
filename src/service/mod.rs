@@ -29,7 +29,7 @@ mod options;
 mod translation;
 
 pub use error::Error;
-pub use options::{ServiceOptions, TOptions};
+pub use options::{ServiceOptions, TOptions, TParams};
 pub use translation::Service;
 
 pub use language::{

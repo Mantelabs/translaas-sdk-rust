@@ -320,7 +320,16 @@ let text = translaas.t_lang("common", "welcome", "de").await?;
 // Two-arg `t` uses default_language / LanguageResolver.
 let text = translaas.t("common", "welcome").await?;
 
-// Extras (plurals, parameters, request-scoped language) stay on TOptions.
+// Named parameters — same idea as Python `parameters={"name": "Ada"}`.
+// Uses default_language / the resolver unless extras set `.lang(...)`.
+let text = translaas
+    .t_params("messages", "hello", [("name", "Ada")])
+    .await?;
+
+// Plural `{N}` uses the same method (`5` or `5.0`). Combine with `(5, [("name", "Ada")])`.
+let text = translaas.t_params("messages", "item", 5).await?;
+
+// Request-scoped extras stay on TOptions.
 let text = translaas
     .t_with(
         "common",
