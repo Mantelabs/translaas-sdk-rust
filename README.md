@@ -4,7 +4,7 @@ Official Translaas client SDK for Rust ([`translaas` on crates.io](https://crate
 
 | | |
 |---|---|
-| **Status** | M4 parity beta (`0.4.0-beta`) — live HTTP, in-memory cache, offline file cache, `service`, axum |
+| **Status** | M4 parity beta (`0.4.0-beta`) — live HTTP, in-memory cache, offline file cache, `service`, axum, opt-in `blocking` |
 | **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
@@ -32,7 +32,7 @@ translaas = { path = "../../sdk/rust" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-Enable additional layers with Cargo features: `offline`, `axum` (see [Cargo features](#cargo-features)). For a client-only build without the convenience `Service`, use `default-features = false` (and re-enable `cache` if you still want in-memory caching).
+Enable additional layers with Cargo features: `offline`, `axum`, `blocking` (see [Cargo features](#cargo-features)). For a client-only build without the convenience `Service`, use `default-features = false` (and re-enable `cache` if you still want in-memory caching). Sync hello-world (no Tokio in *your* manifest) uses `features = ["blocking"]`.
 
 ### crates.io
 
@@ -48,12 +48,12 @@ translaas = { version = "=0.4.0-beta" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-Enable additional layers with Cargo features: `offline`, `axum` (see [Cargo features](#cargo-features)).
+Enable additional layers with Cargo features: `offline`, `axum`, `blocking` (see [Cargo features](#cargo-features)).
 
 - [crates.io/translaas](https://crates.io/crates/translaas)
 - [docs.rs/translaas](https://docs.rs/translaas)
 
-Requires Rust **1.86+** and an async runtime (Tokio recommended) to drive [`Client`](src/client/mod.rs) methods.
+Requires Rust **1.86+**. Async [`Client`](src/client/mod.rs) methods need a runtime (Tokio recommended). Feature `blocking` drives reqwest internally — do **not** add `tokio` to the application `Cargo.toml` for that path, and do **not** call blocking APIs from async tasks.
 
 Maintainers: see [CONTRIBUTING.md § Releasing](./CONTRIBUTING.md#releasing).
 
@@ -468,6 +468,33 @@ Additional options on [`GetEntryOptions`](src/client/get_entry.rs): number, para
 
 The text endpoint returns **plain text** (`Accept: text/plain`), **not** a JSON wrapper like `{ "value": "…" }`.
 
+### Option C — blocking `t()` (no Tokio in your crate)
+
+Opt-in feature `blocking`. Same lookups as Option A, without `.await`. **Do not** call this from Axum or `#[tokio::main]` — you get `Error::BlockingInAsyncContext` instead of a deadlock.
+
+```toml
+[dependencies]
+translaas = { version = "=0.4.0-beta", features = ["blocking"] }
+```
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let translaas = translaas::blocking::ClientBuilder::new()
+        .api_key(std::env::var("TRANSLAAS_API_KEY")?)
+        .base_url("https://api.translaas.local")
+        .default_project_id("translaassdksamples")
+        .default_language("en")
+        .accept_invalid_certs(true) // DEV ONLY
+        .build_service()?;
+
+    let text = translaas.t("common", "welcome.message")?;
+    println!("{text}");
+    Ok(())
+}
+```
+
+See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/blocking) (companion sample).
+
 ## Compatibility
 
 | Rust SDK | .NET SDK | Go SDK | Delivery API | Notes |
@@ -487,6 +514,7 @@ The text endpoint returns **plain text** (`Accept: text/plain`), **not** a JSON 
 | `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache` |
 | `service` | **yes** | Convenience `t()` helper (`translaas::service`) |
 | `axum` | no | Axum extractors / helpers; implies `service` |
+| `blocking` | no | Sync `translaas::blocking` façade; implies `service`. Internal Tokio runtime — no consumer `tokio` dep. Do not call from async tasks. |
 | `integration` | no | **Test-only** — live API integration harness (`make test-integration`) |
 
 ```toml
@@ -518,11 +546,11 @@ Equivalent `cargo` commands (what CI runs):
 
 ```powershell
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --all-targets --features cache,offline,service,axum,blocking -- -D warnings
 cargo test --workspace
-cargo test --workspace --features cache,offline,service,axum
+cargo test --workspace --features cache,offline,service,axum,blocking
 cargo test --workspace --no-default-features
-cargo build --workspace --all-features
+cargo build --workspace --features cache,offline,service,axum,blocking
 ```
 
 Coverage (local only; install [`cargo-llvm-cov`](https://github.com/taiki-e/cargo-llvm-cov) first):
