@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ClientBuilder::build_service()` and crate-root re-exports (`ClientBuilder`, `Service`, `TOptions`) when the `service` feature is on.
 - `Service::t(group, entry)` and `Service::t_lang(group, entry, lang)` for the getting-started path.
 - `Service::t_params(group, entry, extras)` for named `{placeholders}` and/or plural `{N}`. Language is optional (`default_language` / resolver, or `TParams::lang`).
-- `client::Error::Transport` for connect/TLS/DNS failures (distinct from HTTP API errors).
+- `translaas::blocking` (`features = ["blocking"]`): sync `t` / `t_lang` / `t_params` / `t_with` and `get_entry` without a consumer Tokio runtime. Calling these APIs from an async runtime returns `client::Error::BlockingInAsyncContext` (#57).
 
 ### Changed
 

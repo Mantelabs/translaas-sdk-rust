@@ -25,6 +25,11 @@ pub enum Error {
     /// The request was canceled before completion.
     #[error("request was canceled")]
     Canceled,
+    /// A blocking API was invoked from an async runtime (would deadlock).
+    #[error(
+        "blocking Translaas API cannot be used from an async runtime; use async Client/Service or call from a non-async thread"
+    )]
+    BlockingInAsyncContext,
 }
 
 impl Error {
@@ -57,6 +62,11 @@ impl Error {
     /// Returns true when the error is an offline cache miss.
     pub fn is_offline_cache_miss(&self) -> bool {
         matches!(self, Self::OfflineCacheMiss(_))
+    }
+
+    /// Returns true when a blocking API was called from an async runtime.
+    pub fn is_blocking_in_async_context(&self) -> bool {
+        matches!(self, Self::BlockingInAsyncContext)
     }
 }
 
