@@ -7,6 +7,8 @@
 //! [porting reference](https://github.com/Mantelabs/translaas-all/blob/main/.docs/translaas-sdk-dotnet-porting-reference.md).
 //!
 //! Callers need an async runtime (for example Tokio) to drive [`client::Client`] methods.
+//! Enable feature `blocking` for a sync [`blocking`] façade that does **not** require
+//! Tokio in the application `Cargo.toml`.
 
 #![forbid(unsafe_code)]
 
@@ -25,6 +27,9 @@ pub mod service;
 
 #[cfg(feature = "axum")]
 pub mod axum;
+
+#[cfg(feature = "blocking")]
+pub mod blocking;
 
 mod http;
 mod validate;

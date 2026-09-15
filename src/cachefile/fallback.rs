@@ -8,7 +8,7 @@ use crate::client::Error;
 /// user cancellation does not.
 pub(crate) fn is_network_or_api_error(err: &Error) -> bool {
     match err {
-        Error::Canceled => false,
+        Error::Canceled | Error::BlockingInAsyncContext => false,
         Error::Api(_) | Error::Transport { .. } => true,
         Error::Configuration(_) | Error::OfflineCache(_) | Error::OfflineCacheMiss(_) => false,
     }
@@ -49,5 +49,10 @@ mod tests {
             message: "invalid".to_string(),
         });
         assert!(!is_network_or_api_error(&err));
+    }
+
+    #[test]
+    fn blocking_in_async_context_is_not_eligible() {
+        assert!(!is_network_or_api_error(&Error::BlockingInAsyncContext));
     }
 }
