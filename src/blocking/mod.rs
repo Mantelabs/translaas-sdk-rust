@@ -13,17 +13,14 @@
 //!
 //! ```no_run
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let client = translaas::blocking::ClientBuilder::new()
+//!     let translaas = translaas::blocking::ClientBuilder::new()
 //!         .api_key(std::env::var("TRANSLAAS_API_KEY")?)
 //!         .base_url("https://api.translaas.local")
 //!         .default_project_id("translaassdksamples")
-//!         .build()?;
-//!     let text = client.get_entry(
-//!         "common",
-//!         "welcome.message",
-//!         "en",
-//!         translaas::client::GetEntryOptions::new(),
-//!     )?;
+//!         .default_language("en")
+//!         .accept_invalid_certs(true) // DEV ONLY
+//!         .build_service()?;
+//!     let text = translaas.t("common", "welcome.message")?;
 //!     println!("{text}");
 //!     Ok(())
 //! }
@@ -32,8 +29,10 @@
 mod builder;
 mod client;
 mod runtime;
+mod service;
 
 pub use builder::ClientBuilder;
 pub use client::Client;
+pub use service::Service;
 
 pub(crate) use runtime::BlockingDriver;

@@ -22,6 +22,16 @@ impl Client {
         Self { inner, driver }
     }
 
+    pub(crate) fn into_parts(self) -> (crate::client::Client, BlockingDriver) {
+        (self.inner, self.driver)
+    }
+
+    /// Wraps this client in a blocking [`super::Service`], reusing the same runtime.
+    pub fn into_service(self) -> super::Service {
+        let (inner, driver) = self.into_parts();
+        super::Service::from_parts(crate::service::Service::new(inner), driver)
+    }
+
     /// Default locale for convenience `Service` resolution.
     pub fn default_language(&self) -> Option<&str> {
         self.inner.default_language()

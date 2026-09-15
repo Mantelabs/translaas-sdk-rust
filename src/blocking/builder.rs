@@ -92,4 +92,12 @@ impl ClientBuilder {
         let driver = BlockingDriver::new()?;
         Ok(Client::from_parts(inner, driver))
     }
+
+    /// Builds a blocking [`super::Service`] wrapping the live HTTP client.
+    pub fn build_service(self) -> Result<super::Service, crate::service::Error> {
+        Ok(self
+            .build()
+            .map_err(crate::client::Error::from)?
+            .into_service())
+    }
 }
