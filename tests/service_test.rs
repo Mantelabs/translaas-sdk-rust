@@ -15,7 +15,7 @@ use translaas::models::{
 };
 use translaas::service::{
     ContextLanguageProvider, DefaultLanguageProvider, Error as ServiceError, LanguageContext,
-    LanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions,
+    LanguageProvider, LanguageResolver, Service, ServiceOptions, TOptions, TParams,
 };
 
 #[derive(Default)]
@@ -326,7 +326,7 @@ async fn t_forwards_get_entry_options() {
         project: Some("demo".into()),
         ..RequestContext::default()
     };
-    let mut params = HashMap::new();
+    let mut params: HashMap<String, String> = HashMap::new();
     params.insert("name".into(), "Ada".into());
 
     service
@@ -350,6 +350,89 @@ async fn t_forwards_get_entry_options() {
     assert_eq!(
         inner.last_request_context_project().as_deref(),
         Some("demo")
+    );
+}
+
+#[tokio::test]
+async fn t_params_accepts_pairs_number_and_both() {
+    let inner = SharedMockClient::with_default_language("en");
+    let service = Service::new(inner.clone());
+
+    service
+        .t_params("common", "items", [("name", "Ada")])
+        .await
+        .unwrap();
+    assert_eq!(inner.last_lang(), "en");
+    assert_eq!(
+        inner.last_parameters().get("name").map(String::as_str),
+        Some("Ada")
+    );
+    assert_eq!(inner.last_number(), None);
+
+    service.t_params("common", "items", 5).await.unwrap();
+    assert_eq!(inner.last_lang(), "en");
+    assert_eq!(inner.last_number(), Some(5.0));
+    assert!(inner.last_parameters().is_empty());
+
+    service
+        .t_params("common", "items", (5, [("name", "Ada")]))
+        .await
+        .unwrap();
+    assert_eq!(inner.last_number(), Some(5.0));
+    assert_eq!(
+        inner.last_parameters().get("name").map(String::as_str),
+        Some("Ada")
+    );
+
+    service
+        .t_params(
+            "common",
+            "items",
+            TParams::new().lang("fr").number(2.0).param("city", "Lima"),
+        )
+        .await
+        .unwrap();
+    assert_eq!(inner.last_lang(), "fr");
+    assert_eq!(inner.last_number(), Some(2.0));
+    assert_eq!(
+        inner.last_parameters().get("city").map(String::as_str),
+        Some("Lima")
+    );
+
+    service
+        .t_params("common", "items", ("de", 3))
+        .await
+        .unwrap();
+    assert_eq!(inner.last_lang(), "de");
+    assert_eq!(inner.last_number(), Some(3.0));
+}
+
+#[tokio::test]
+async fn t_with_param_chains() {
+    let inner = SharedMockClient::new();
+    let service = Service::new(inner.clone());
+
+    service
+        .t_with(
+            "common",
+            "items",
+            TOptions::new()
+                .lang("en")
+                .param("name", "Ada")
+                .param("city", "Lima")
+                .number(2.0),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(inner.last_number(), Some(2.0));
+    assert_eq!(
+        inner.last_parameters().get("name").map(String::as_str),
+        Some("Ada")
+    );
+    assert_eq!(
+        inner.last_parameters().get("city").map(String::as_str),
+        Some("Lima")
     );
 }
 

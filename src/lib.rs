@@ -32,4 +32,4 @@ mod validate;
 pub use client::ClientBuilder;
 
 #[cfg(feature = "service")]
-pub use service::{Service, ServiceOptions, TOptions};
+pub use service::{Service, ServiceOptions, TOptions, TParams};

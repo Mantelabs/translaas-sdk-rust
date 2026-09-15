@@ -40,9 +40,25 @@ impl<'a> GetEntryOptions<'a> {
         self
     }
 
+    /// Adds or replaces one interpolation parameter (`{name}` in the catalog).
+    pub fn param(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.parameters.insert(key.into(), value.into());
+        self
+    }
+
     /// Sets interpolation parameters.
-    pub fn parameters(mut self, parameters: HashMap<String, String>) -> Self {
-        self.parameters = parameters;
+    ///
+    /// Accepts a [`HashMap`] or a list of pairs, for example `[("name", "Ada")]`.
+    pub fn parameters<I, K, V>(mut self, parameters: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: Into<String>,
+        V: Into<String>,
+    {
+        self.parameters = parameters
+            .into_iter()
+            .map(|(key, value)| (key.into(), value.into()))
+            .collect();
         self
     }
 

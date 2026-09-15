@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ClientBuilder::default_language` and `ClientBuilder::accept_invalid_certs` (dev-only TLS for local Docker).
 - `ClientBuilder::build_service()` and crate-root re-exports (`ClientBuilder`, `Service`, `TOptions`) when the `service` feature is on.
 - `Service::t(group, entry)` and `Service::t_lang(group, entry, lang)` for the getting-started path.
+- `Service::t_params(group, entry, extras)` for named `{placeholders}` and/or plural `{N}`. Language is optional (`default_language` / resolver, or `TParams::lang`).
 - `client::Error::Transport` for connect/TLS/DNS failures (distinct from HTTP API errors).
 
 ### Changed

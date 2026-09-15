@@ -5,7 +5,7 @@ use crate::models::NoLanguageError;
 
 use super::error::Error;
 use super::language::{DefaultLanguageProvider, LanguageProvider, LanguageResolver};
-use super::options::{ServiceOptions, TOptions};
+use super::options::{ServiceOptions, TOptions, TParams};
 
 /// Convenience translation API with optional automatic language resolution.
 #[derive(Clone)]
@@ -81,6 +81,29 @@ impl<C: TranslaasClient> Service<C> {
         lang: impl Into<String>,
     ) -> Result<String, Error> {
         self.t_with(group, entry, TOptions::new().lang(lang)).await
+    }
+
+    /// Retrieves a translation with named parameters and/or a plural count.
+    ///
+    /// Language follows [`Self::t`]: `default_language` / the resolver unless extras set
+    /// [`TParams::lang`]. Same idea as Python `t(..., parameters={"name": "Ada"})` and
+    /// .NET `T(..., parameters)` / `T(..., number: 5)` without a required lang argument.
+    ///
+    /// ```ignore
+    /// translaas.t_params("messages", "hello", [("name", "Ada")]).await?;
+    /// translaas.t_params("messages", "item", 5).await?;
+    /// translaas.t_params("messages", "hello", TParams::new().lang("de").param("name", "Ada")).await?;
+    /// ```
+    ///
+    /// Use [`Self::t_with`] for request context or other extras.
+    pub async fn t_params(
+        &self,
+        group: &str,
+        entry: &str,
+        params: impl Into<TParams>,
+    ) -> Result<String, Error> {
+        self.t_with(group, entry, params.into().apply_to(TOptions::new()))
+            .await
     }
 
     /// Retrieves a translation with extras (plural count, parameters, request context).
