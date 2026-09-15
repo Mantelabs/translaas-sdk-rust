@@ -18,3 +18,9 @@ fn crate_version_matches_manifest() {
 fn default_features_include_service() {
     let _ = translaas::Service::<translaas::client::Client>::new;
 }
+
+#[cfg(feature = "blocking")]
+#[test]
+fn blocking_feature_exports_builder() {
+    let _ = translaas::blocking::ClientBuilder::new;
+}

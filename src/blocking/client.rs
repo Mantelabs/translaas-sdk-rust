@@ -17,6 +17,14 @@ pub struct Client {
     driver: BlockingDriver,
 }
 
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Client")
+            .field("base_url", &self.inner.base_url())
+            .finish_non_exhaustive()
+    }
+}
+
 impl Client {
     pub(crate) fn from_parts(inner: crate::client::Client, driver: BlockingDriver) -> Self {
         Self { inner, driver }

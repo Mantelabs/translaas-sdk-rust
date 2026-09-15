@@ -92,6 +92,10 @@ name = "axum_test"
 required-features = ["axum"]
 
 [[test]]
+name = "blocking_test"
+required-features = ["blocking"]
+
+[[test]]
 name = "live_api"
 path = "tests/integration/live_api.rs"
 required-features = ["integration"]

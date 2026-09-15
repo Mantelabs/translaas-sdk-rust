@@ -10,6 +10,12 @@ pub struct Service {
     driver: BlockingDriver,
 }
 
+impl std::fmt::Debug for Service {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Service").finish_non_exhaustive()
+    }
+}
+
 impl Service {
     pub(crate) fn from_parts(
         inner: crate::service::Service<crate::client::Client>,
