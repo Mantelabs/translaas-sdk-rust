@@ -10,7 +10,7 @@ fn crate_links() {
 
 #[test]
 fn crate_version_matches_manifest() {
-    assert_eq!(env!("CARGO_PKG_VERSION"), "0.4.0-beta");
+    assert_eq!(env!("CARGO_PKG_VERSION"), "0.4.0");
 }
 
 #[cfg(feature = "service")]

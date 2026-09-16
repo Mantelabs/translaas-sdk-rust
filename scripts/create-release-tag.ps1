@@ -31,7 +31,7 @@ if ([string]::IsNullOrEmpty($Version)) {
 }
 
 if ([string]::IsNullOrEmpty($Version)) {
-    Write-Error 'Could not determine version. Pass as argument (e.g. 0.4.0-beta).'
+    Write-Error 'Could not determine version. Pass as argument (e.g. 0.4.0).'
     exit 1
 }
 

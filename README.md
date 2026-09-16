@@ -4,7 +4,7 @@ Official Translaas client SDK for Rust ([`translaas` on crates.io](https://crate
 
 | | |
 |---|---|
-| **Status** | M4 parity beta (`0.4.0-beta`) — live HTTP, in-memory cache, offline file cache, `service`, axum, opt-in `blocking` |
+| **Status** | M4 parity (`0.4.0`) — live HTTP, in-memory cache, offline file cache, `service`, axum, opt-in `blocking` |
 | **MSRV** | Rust **1.86+** |
 | **License** | MIT |
 
@@ -39,12 +39,12 @@ Enable additional layers with Cargo features: `offline`, `axum`, `blocking` (see
 Pin to a semver release (recommended for production):
 
 ```bash
-cargo add translaas@=0.4.0-beta
+cargo add translaas@=0.4.0
 ```
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta" }
+translaas = { version = "=0.4.0" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -102,7 +102,7 @@ Enable the `offline` feature for on-disk caching (`translaas::cachefile`). Disk 
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", features = ["offline"] }
+translaas = { version = "=0.4.0", features = ["offline"] }
 ```
 
 ```rust
@@ -300,7 +300,7 @@ Optional callbacks (`SyncCallbacks`) mirror Go hooks; adapt to channels by forwa
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta" }
+translaas = { version = "=0.4.0" }
 ```
 
 ```rust
@@ -360,7 +360,7 @@ Enable the optional Axum helpers when building web apps:
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", features = ["axum"] }
+translaas = { version = "=0.4.0", features = ["axum"] }
 axum = "0.8"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
@@ -509,7 +509,7 @@ Opt-in feature `blocking`. Same lookups as Option A, without `.await`. **Do not*
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", features = ["blocking"] }
+translaas = { version = "=0.4.0", features = ["blocking"] }
 ```
 
 ```rust
@@ -534,7 +534,7 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 
 | Rust SDK | .NET SDK | Go SDK | Delivery API | Notes |
 |----------|----------|--------|--------------|-------|
-| `0.4.0-beta` | `v0.4.1-beta` | `v0.4.0-beta` | `/sdk/v1` + `/api/v1/api-keys/validate` | M4 parity: client, cache, offline, `t()`, axum |
+| `0.4.0` | `v0.4.1-beta` | `v0.4.0` | `/sdk/v1` + `/api/v1/api-keys/validate` | M4 parity: client, cache, offline, `t()`, axum |
 | (future) `v0.3.0-beta` | — | `v0.3.0-beta` | same | Offline + sync |
 | (future) `v0.2.0-beta` | — | `v0.2.0-beta` | same | In-memory `CacheMode` |
 | (future) `v0.1.0-alpha` | — | `v0.1.0-alpha` | same | Read-only client |
@@ -554,14 +554,14 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta" }
+translaas = { version = "=0.4.0" }
 ```
 
 Client-only (no `Service`):
 
 ```toml
 [dependencies]
-translaas = { version = "=0.4.0-beta", default-features = false, features = ["cache"] }
+translaas = { version = "=0.4.0", default-features = false, features = ["cache"] }
 ```
 
 ## Development

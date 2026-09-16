@@ -1436,7 +1436,7 @@ dependencies = [
 
 [[package]]
 name = "translaas"
-version = "0.4.0-beta"
+version = "0.4.0"
 dependencies = [
  "axum",
  "chrono",

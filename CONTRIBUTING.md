@@ -76,11 +76,12 @@ Reference GitHub issues in the commit body or PR: `Closes #123`.
 ## Versioning
 
 This crate uses [Semantic Versioning](https://semver.org/) with optional pre-release
-suffixes (`-alpha`, `-beta`, `-rc`). The first crates.io release is **`0.4.0-beta`**
-(Go SDK parity). Consumers should pin exact versions:
+suffixes (`-alpha`, `-beta`, `-rc`). The first crates.io release was **`0.4.0-beta`**
+(Go SDK parity). The current release is **`0.4.0`**. Consumers should pin a
+semver-compatible version:
 
 ```bash
-cargo add translaas@=0.4.0-beta --features service
+cargo add translaas@0.4.0
 ```
 
 ## Releasing
@@ -113,10 +114,10 @@ Never commit token values. PR CI does **not** require `CARGO_REGISTRY_TOKEN`.
 
    ```powershell
    just publish-dry-run
-   just validate-release 0.4.0-beta
+   just validate-release 0.4.0
    just release-tag-dry-run
    # or:
-   pwsh -File scripts/validate-release-version.ps1 0.4.0-beta
+   pwsh -File scripts/validate-release-version.ps1 0.4.0
    pwsh -File scripts/create-release-tag.ps1 -DryRun
    ```
 
@@ -132,19 +133,19 @@ Never commit token values. PR CI does **not** require `CARGO_REGISTRY_TOKEN`.
    **Windows (PowerShell):**
 
    ```powershell
-   just release-tag 0.4.0-beta
-   # or: pwsh -File scripts/create-release-tag.ps1 0.4.0-beta
+   just release-tag 0.4.0
+   # or: pwsh -File scripts/create-release-tag.ps1 0.4.0
    ```
 
    **Linux / macOS:**
 
    ```bash
-   bash scripts/create-release-tag.sh 0.4.0-beta
+   bash scripts/create-release-tag.sh 0.4.0
    ```
 
 8. Verify the [GitHub Release](https://github.com/Mantelabs/translaas-sdk-rust/releases),
    [crates.io page](https://crates.io/crates/translaas), and docs.rs build.
-9. Confirm consumer install resolves: `cargo add translaas@=0.4.0-beta --features service`.
+9. Confirm consumer install resolves: `cargo add translaas@0.4.0`.
 
 ### First-time crates.io setup
 
