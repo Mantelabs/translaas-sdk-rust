@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Service::t(group, entry)` and `Service::t_lang(group, entry, lang)` for the getting-started path.
 - `Service::t_params(group, entry, extras)` for named `{placeholders}` and/or plural `{N}`. Language is optional (`default_language` / resolver, or `TParams::lang`).
 - `translaas::blocking` (`features = ["blocking"]`): sync `t` / `t_lang` / `t_params` / `t_with` and `get_entry` without a consumer Tokio runtime. Calling these APIs from an async runtime returns `client::Error::BlockingInAsyncContext` (#57).
+- `translaas::axum::add_translaas` / `add_translaas_from_env`: one-call Axum installer analogue of .NET `AddTranslaas` (#58). Builds `Client` + `Service`, installs request-language middleware, and does not take over `Router::with_state`.
 
 ### Changed
 
