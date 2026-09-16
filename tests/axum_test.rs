@@ -11,7 +11,9 @@ use axum::routing::get;
 use axum::Router;
 use http_body_util::BodyExt;
 use tower::ServiceExt;
-use translaas::axum::{middleware, translaas_middleware, MiddlewareOptions, Translaas};
+use translaas::axum::{
+    add_translaas, middleware, translaas_middleware, MiddlewareOptions, Translaas,
+};
 use translaas::client::{
     Error, GetEntryOptions, GetGroupOptions, GetOfflineCacheOptions, GetProjectLocalesOptions,
     GetProjectOptions, TranslaasClient,
@@ -356,4 +358,161 @@ fn middleware_requires_base_service() {
         result,
         Err(translaas::axum::MiddlewareError::MissingBaseService)
     ));
+}
+
+async fn installer_welcome(Translaas(t): Translaas<translaas::client::Client>) -> String {
+    t.t("common", "welcome.message").await.expect("translation")
+}
+
+#[derive(Clone)]
+struct AppState {
+    prefix: &'static str,
+}
+
+async fn installer_welcome_with_state(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    Translaas(t): Translaas<translaas::client::Client>,
+) -> String {
+    let text = t.t("common", "welcome.message").await.expect("translation");
+    format!("{}:{text}", state.prefix)
+}
+
+fn install_app(base_url: &str, default_language: &str) -> Router {
+    add_translaas(Router::new().route("/", get(installer_welcome)), |o| {
+        Ok(o.api_key("test-api-key")
+            .base_url(base_url)
+            .default_project_id("translaassdksamples")
+            .default_language(default_language))
+    })
+    .expect("add_translaas")
+}
+
+#[test]
+fn add_translaas_missing_api_key_fails_at_construction() {
+    let err = add_translaas(Router::<()>::new(), |o| {
+        Ok(o.base_url("https://example.com"))
+    })
+    .expect_err("missing api key");
+    assert!(err.is_missing_api_key());
+    assert!(err.to_string().contains("ApiKey"));
+}
+
+#[test]
+fn add_translaas_whitespace_api_key_fails_at_construction() {
+    let err = add_translaas(Router::<()>::new(), |o| {
+        Ok(o.api_key("   ").base_url("https://example.com"))
+    })
+    .expect_err("whitespace api key");
+    assert!(err.is_missing_api_key());
+}
+
+#[test]
+fn add_translaas_invalid_base_url_fails_at_construction() {
+    let err = add_translaas(Router::<()>::new(), |o| {
+        Ok(o.api_key("test-key").base_url("not-a-url"))
+    })
+    .expect_err("invalid base url");
+    assert!(err.to_string().contains("HTTP or HTTPS"));
+}
+
+#[tokio::test]
+async fn add_translaas_installer_query_lang_wins() {
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("GET"))
+        .and(wiremock::matchers::path("/sdk/v1/translations/text"))
+        .and(wiremock::matchers::query_param("group", "common"))
+        .and(wiremock::matchers::query_param("entry", "welcome.message"))
+        .and(wiremock::matchers::query_param("lang", "de"))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_string("Willkommen!"))
+        .mount(&server)
+        .await;
+
+    let app = install_app(&server.uri(), "en");
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/?lang=de")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&body[..], b"Willkommen!");
+}
+
+#[tokio::test]
+async fn add_translaas_installer_uses_default_language_without_request_signals() {
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("GET"))
+        .and(wiremock::matchers::path("/sdk/v1/translations/text"))
+        .and(wiremock::matchers::query_param("lang", "fr"))
+        .and(wiremock::matchers::query_param("group", "common"))
+        .and(wiremock::matchers::query_param("entry", "welcome.message"))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_string("Bonjour!"))
+        .mount(&server)
+        .await;
+
+    let app = install_app(&server.uri(), "fr");
+    let response = app
+        .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&body[..], b"Bonjour!");
+}
+
+#[tokio::test]
+async fn add_translaas_handlers_extract_translaas_client() {
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("GET"))
+        .and(wiremock::matchers::path("/sdk/v1/translations/text"))
+        .and(wiremock::matchers::query_param("lang", "en"))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_string("Welcome back!"))
+        .mount(&server)
+        .await;
+
+    let app = install_app(&server.uri(), "en");
+    let response = app
+        .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&body[..], b"Welcome back!");
+}
+
+#[tokio::test]
+async fn add_translaas_coexists_with_app_with_state() {
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("GET"))
+        .and(wiremock::matchers::path("/sdk/v1/translations/text"))
+        .and(wiremock::matchers::query_param("lang", "en"))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_string("Welcome back!"))
+        .mount(&server)
+        .await;
+
+    let router = Router::new().route("/", get(installer_welcome_with_state));
+    let app = add_translaas(router, |o| {
+        Ok(o.api_key("test-api-key")
+            .base_url(server.uri())
+            .default_project_id("translaassdksamples")
+            .default_language("en"))
+    })
+    .expect("add_translaas")
+    .with_state(AppState { prefix: "ok" });
+
+    let response = app
+        .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&body[..], b"ok:Welcome back!");
 }

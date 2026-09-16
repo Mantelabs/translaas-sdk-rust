@@ -9,11 +9,13 @@
 
 mod error;
 mod extract;
+mod install;
 mod language;
 mod middleware;
 
 pub use error::{MiddlewareError, TranslaasRejection};
 pub use extract::{LanguageContextExt, Translaas};
+pub use install::{add_translaas, add_translaas_from_env, InstallError, InstallOptions};
 pub use language::{
     default_language_sources, language_context_from_parts, LanguageSource, RequestLanguageOptions,
     RequestLanguageProvider, RouteLanguageFn,

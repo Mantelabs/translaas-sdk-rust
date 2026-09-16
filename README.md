@@ -365,12 +365,52 @@ axum = "0.8"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-Wire middleware once, then use the [`Translaas`](src/axum/extract.rs) extractor in handlers:
+### Installer (recommended)
+
+[`add_translaas`](src/axum/install.rs) builds the client and `Service`, installs request-language middleware, and leaves [`Translaas`](src/axum/extract.rs) extractable in handlers. It does **not** take over `Router::with_state` — your app still owns router state.
+
+```rust
+use axum::{routing::get, Router};
+use translaas::axum::{add_translaas, Translaas};
+use translaas::cache::CacheMode;
+use translaas::client::Client;
+
+async fn welcome(
+    Translaas(t): Translaas<Client>,
+) -> Result<String, (axum::http::StatusCode, String)> {
+    t.t("common", "welcome.message")
+        .await
+        .map_err(|err| (axum::http::StatusCode::BAD_GATEWAY, err.to_string()))
+}
+
+# fn demo() -> Result<(), Box<dyn std::error::Error>> {
+let app = add_translaas(Router::new().route("/", get(welcome)), |o| {
+    Ok(o.api_key(std::env::var("TRANSLAAS_API_KEY")?)
+        .base_url("https://api.translaas.local")
+        .default_project_id("translaassdksamples")
+        .default_language("en")
+        .cache_mode(CacheMode::Group)
+        .accept_invalid_certs(true)) // DEV ONLY — local *.translaas.local
+})?;
+# let _ = app;
+# Ok(())
+# }
+```
+
+`add_translaas_from_env` reads `TRANSLAAS_API_KEY` (required), `TRANSLAAS_BASE_URL` (default `https://api.translaas.local`), `TRANSLAAS_DEFAULT_PROJECT` (default `translaassdksamples`), and `TRANSLAAS_DEFAULT_LANGUAGE` (default `en`). Missing or empty API key fails at **install** time, not on the first request.
+
+**Language resolution (defaults):** query `?lang=` → parsed `Accept-Language` → cookie `language` → `default_language`. Configure sources via [`MiddlewareOptions`](src/axum/middleware.rs) on the manual path below. Route/path language uses an optional [`RouteLanguageFn`](src/axum/language.rs) callback.
+
+Runnable sample: [`examples/rust/axum`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/axum).
+
+### Advanced — already-built `Service`
+
+Keep using [`middleware`](src/axum/middleware.rs) + [`translaas_middleware`](src/axum/middleware.rs) when you need a custom client, `CachingClient`, or custom language sources. Attach the layer with `from_fn_with_state`; do **not** put `TranslaasMiddlewareState` in `Router::with_state` (that slot is for your app).
 
 ```rust
 use std::sync::Arc;
 
-use axum::{Router, routing::get, middleware::from_fn_with_state};
+use axum::{middleware::from_fn_with_state, routing::get, Router};
 use translaas::axum::{middleware, translaas_middleware, MiddlewareOptions, Translaas};
 use translaas::client::ClientBuilder;
 
@@ -393,16 +433,11 @@ let state = Arc::new(middleware(MiddlewareOptions::with_base_service(base))?);
 
 let app = Router::new()
     .route("/", get(welcome))
-    .layer(from_fn_with_state(state.clone(), translaas_middleware))
-    .with_state(state);
+    .layer(from_fn_with_state(state, translaas_middleware));
 # let _ = app;
 # Ok(())
 # }
 ```
-
-**Language resolution (defaults):** query `?lang=` → parsed `Accept-Language` → cookie `language`. Configure sources via [`MiddlewareOptions`](src/axum/middleware.rs). Route/path language uses an optional [`RouteLanguageFn`](src/axum/language.rs) callback.
-
-Runnable sample: [`examples/rust/basic`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic) (Axum sample planned).
 
 ### Security — XSS
 
@@ -513,7 +548,7 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 | `cache` | yes | In-memory cache layer (`translaas::cache`) |
 | `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache` |
 | `service` | **yes** | Convenience `t()` helper (`translaas::service`) |
-| `axum` | no | Axum extractors / helpers; implies `service` |
+| `axum` | no | Axum installer (`add_translaas`), extractors, and middleware; implies `service` |
 | `blocking` | no | Sync `translaas::blocking` façade; implies `service`. Internal Tokio runtime — no consumer `tokio` dep. Do not call from async tasks. |
 | `integration` | no | **Test-only** — live API integration harness (`make test-integration`) |
 
@@ -571,8 +606,9 @@ Runnable sample apps live in the meta-repo under [`examples/rust/`](https://gith
 | Sample | Status | Purpose |
 |--------|--------|---------|
 | [`basic/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic) | Available | Console quickstart — fetch a translation with `service::t()` |
+| [`blocking/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/blocking) | Available | Sync console quickstart — no Tokio in the app manifest |
 | `offline/` | Planned | Sync project to disk, then read with cache-only mode |
-| `axum/` | Planned | Axum middleware + extractor |
+| [`axum/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/axum) | Available | Axum installer + `Translaas` extractor |
 
 ## CI
 
