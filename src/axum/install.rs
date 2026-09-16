@@ -177,16 +177,14 @@ impl From<std::env::VarError> for InstallError {
 /// use translaas::axum::{add_translaas, Translaas};
 /// use translaas::client::Client;
 ///
-/// # fn demo() -> Result<(), translaas::axum::InstallError> {
-/// let app = add_translaas(Router::new().route("/", get(welcome)), |o| {
+/// # fn demo() -> Result<Router, translaas::axum::InstallError> {
+/// add_translaas(Router::new().route("/", get(welcome)), |o| {
 ///     Ok(o.api_key(std::env::var("TRANSLAAS_API_KEY")?)
 ///         .base_url("https://api.translaas.local")
 ///         .default_project_id("translaassdksamples")
 ///         .default_language("en")
 ///         .accept_invalid_certs(true))
-/// })?;
-/// # let _ = app;
-/// # Ok(())
+/// })
 /// # }
 ///
 /// async fn welcome(
