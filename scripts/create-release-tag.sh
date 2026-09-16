@@ -41,7 +41,7 @@ if [[ -z "$version" ]]; then
 fi
 
 if [[ -z "$version" ]]; then
-  echo "Could not determine version. Pass as argument (e.g. 0.4.0-beta)." >&2
+  echo "Could not determine version. Pass as argument (e.g. 0.4.0)." >&2
   exit 1
 fi
 

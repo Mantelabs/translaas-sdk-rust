@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-16
+
 ### Added
 
 - `ClientBuilder::default_language` and `ClientBuilder::accept_invalid_certs` (dev-only TLS for local Docker).
@@ -23,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** connect/TLS/DNS failures are `Error::Transport`, not `ApiError` with status 400. Timeouts remain 408-shaped `Api`.
 - Default Cargo features are now `cache` **and** `service` (`offline` and `axum` stay opt-in). Use `default-features = false` for a client-only build.
 - Optional `zip` dependency (offline feature) bumped from **0.6** to **8** (`zip-rs/zip2`).
+- First stable crates.io release: drop the `-beta` pre-release suffix.
 
 ## [0.4.0-beta] - 2026-08-02
 
