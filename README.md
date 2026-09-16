@@ -548,7 +548,7 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 | `cache` | yes | In-memory cache layer (`translaas::cache`) |
 | `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache` |
 | `service` | **yes** | Convenience `t()` helper (`translaas::service`) |
-| `axum` | no | Axum extractors / helpers; implies `service` |
+| `axum` | no | Axum installer (`add_translaas`), extractors, and middleware; implies `service` |
 | `blocking` | no | Sync `translaas::blocking` façade; implies `service`. Internal Tokio runtime — no consumer `tokio` dep. Do not call from async tasks. |
 | `integration` | no | **Test-only** — live API integration harness (`make test-integration`) |
 
@@ -606,8 +606,9 @@ Runnable sample apps live in the meta-repo under [`examples/rust/`](https://gith
 | Sample | Status | Purpose |
 |--------|--------|---------|
 | [`basic/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic) | Available | Console quickstart — fetch a translation with `service::t()` |
+| [`blocking/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/blocking) | Available | Sync console quickstart — no Tokio in the app manifest |
 | `offline/` | Planned | Sync project to disk, then read with cache-only mode |
-| `axum/` | Planned | Axum middleware + extractor |
+| [`axum/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/axum) | Available | Axum installer + `Translaas` extractor |
 
 ## CI
 
