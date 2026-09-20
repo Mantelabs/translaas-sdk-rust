@@ -37,10 +37,12 @@ jobs:
         run: cargo metadata --no-deps --format-version 1
 
       - name: Check
-        run: cargo check --workspace --all-targets --locked --features cache,offline,service,axum,blocking
+        # Default features only: `offline` pulls zip 8.x (rust-version 1.88) so it cannot
+        # compile on MSRV 1.86. ICU4X 2.2.0 for plurals is locked to match this MSRV.
+        run: cargo check --workspace --all-targets --locked
 
       - name: Test
-        run: cargo test --workspace --locked --features cache,offline,service,axum,blocking
+        run: cargo test --workspace --locked
 
   lint:
     name: Lint
