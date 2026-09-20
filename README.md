@@ -207,7 +207,7 @@ let text = client
 
 Intercepted reads: `get_entry`, `get_group`, `get_project`, `get_project_locales`. Passthrough (always inner): `get_offline_cache`, `report_missing_keys`, `validate_api_key`.
 
-Offline entry resolution uses simplified plural rules (`n == 1` → `One`, else `Other`) and `{param}` substitution — not full CLDR parity with the live API.
+Offline entry resolution uses **CLDR cardinal** rules via ICU4X (`icu_plurals` 2.2) for `(n, lang)` — the same six categories as the live API (`zero` / `one` / `two` / `few` / `many` / `other`) — plus `{param}` substitution. Live HTTP `get_entry` still sends `n` and lets the server select.
 
 For **keyless offline-only** deployments, pair `FallbackMode::CacheOnly` with [`OfflineStubClient`](src/cachefile/offline_stub.rs) after seeding disk:
 
@@ -539,14 +539,14 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 | (future) `v0.2.0-beta` | — | `v0.2.0-beta` | same | In-memory `CacheMode` |
 | (future) `v0.1.0-alpha` | — | `v0.1.0-alpha` | same | Read-only client |
 
-**Known divergences:** no built-in retry policy in Rust v1; simplified offline pluralization; text endpoint returns plain text (not JSON).
+**Known divergences:** no built-in retry policy in Rust v1; text endpoint returns plain text (not JSON).
 
 ## Cargo features
 
 | Feature | Default | Purpose |
 |---------|---------|---------|
 | `cache` | yes | In-memory cache layer (`translaas::cache`) |
-| `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache` |
+| `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache`. Pulls ICU4X `icu_plurals` / `icu_locale` 2.2 compiled CLDR data. |
 | `service` | **yes** | Convenience `t()` helper (`translaas::service`) |
 | `axum` | no | Axum installer (`add_translaas`), extractors, and middleware; implies `service` |
 | `blocking` | no | Sync `translaas::blocking` façade; implies `service`. Internal Tokio runtime — no consumer `tokio` dep. Do not call from async tasks. |

@@ -33,7 +33,9 @@
 //! # Offline decorator
 //!
 //! [`CachingClient`] wraps [`crate::client::TranslaasClient`] with
-//! [`FallbackMode`] strategies for read operations.
+//! [`FallbackMode`] strategies for read operations. Offline `get_entry`
+//! selects CLDR cardinal plural forms for the request locale using ICU4X
+//! (`icu_plurals` 2.2) and substitutes `{param}` / `{N}` placeholders.
 //!
 //! # Sync service
 //!
