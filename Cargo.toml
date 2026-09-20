@@ -20,7 +20,7 @@ all-features = true
 [features]
 default = ["cache", "service"]
 cache = []
-offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util", "dep:zip"]
+offline = ["cache", "dep:lru", "dep:tokio", "dep:tokio-util", "dep:zip", "dep:icu_plurals", "dep:icu_locale"]
 service = []
 axum = ["service", "dep:axum"]
 blocking = ["service", "dep:tokio"]
@@ -38,6 +38,8 @@ tokio-util = { version = "0.7", optional = true }
 url = "2.5.2"
 zip = { version = "8", default-features = false, features = ["deflate"], optional = true }
 axum = { version = "0.8", optional = true, default-features = false, features = ["matched-path", "query"] }
+icu_plurals = { version = "=2.2.0", optional = true, features = ["compiled_data"] }
+icu_locale = { version = "=2.2.0", optional = true }
 
 [dev-dependencies]
 tempfile = "3"
@@ -69,6 +71,10 @@ required-features = ["offline"]
 
 [[test]]
 name = "cachefile_caching_client_test"
+required-features = ["offline"]
+
+[[test]]
+name = "cachefile_caching_client_plural_test"
 required-features = ["offline"]
 
 [[test]]
