@@ -50,6 +50,7 @@
 mod atomic;
 mod caching_client;
 mod caching_options;
+mod cldr_plural;
 mod fallback;
 mod file_provider;
 mod file_provider_import;

@@ -1,19 +1,22 @@
-//! Offline entry resolution: simplified plural rules and placeholder substitution.
+//! Offline entry resolution: CLDR cardinal plurals and placeholder substitution.
 
 use std::collections::HashMap;
 
 use crate::models::{PluralCategory, TranslationGroup};
 
+use super::cldr_plural;
+
 /// Resolves a rendered entry value from a cached group using offline plural and
-/// placeholder rules (porting reference §8.3).
+/// placeholder rules (CLDR cardinal selection for `(n, lang)`).
 pub(crate) fn resolve_entry_from_group(
     group: &TranslationGroup,
     entry: &str,
+    lang: &str,
     number: Option<f64>,
     params: &HashMap<String, String>,
 ) -> Option<String> {
     if group.has_plural_forms(entry) {
-        let category = determine_plural_category(number);
+        let category = determine_plural_category(number, lang);
         let mut form = group.get_plural_form(entry, category);
         if form.is_none() && category != PluralCategory::Other {
             form = group.get_plural_form(entry, PluralCategory::Other);
@@ -26,12 +29,9 @@ pub(crate) fn resolve_entry_from_group(
         .map(|value| substitute_parameters(value, number, params))
 }
 
-/// Offline plural selection: `n == 1` → `One`, otherwise `Other`.
-pub(crate) fn determine_plural_category(number: Option<f64>) -> PluralCategory {
-    match number {
-        Some(1.0) => PluralCategory::One,
-        _ => PluralCategory::Other,
-    }
+/// Offline plural selection using CLDR cardinal rules for the request locale.
+pub(crate) fn determine_plural_category(number: Option<f64>, lang: &str) -> PluralCategory {
+    cldr_plural::resolve_category(number, lang)
 }
 
 /// Substitutes `{parameter}` placeholders using case-insensitive parameter lookup.
@@ -142,7 +142,26 @@ mod tests {
         let mut entries = HashMap::new();
         entries.insert(
             "items".to_string(),
-            serde_json::json!({"One": "1 item", "Other": "{N} items"}),
+            serde_json::json!({"one": "1 item", "other": "{N} items"}),
+        );
+        TranslationGroup {
+            entries,
+            ..Default::default()
+        }
+    }
+
+    fn group_with_all_plural_forms() -> TranslationGroup {
+        let mut entries = HashMap::new();
+        entries.insert(
+            "items".to_string(),
+            serde_json::json!({
+                "zero": "FORM:zero",
+                "one": "FORM:one",
+                "two": "FORM:two",
+                "few": "FORM:few",
+                "many": "FORM:many",
+                "other": "FORM:other",
+            }),
         );
         TranslationGroup {
             entries,
@@ -205,21 +224,61 @@ mod tests {
 
     #[test]
     fn determine_plural_category_rules() {
-        assert_eq!(determine_plural_category(None), PluralCategory::Other);
-        assert_eq!(determine_plural_category(Some(1.0)), PluralCategory::One);
-        assert_eq!(determine_plural_category(Some(2.0)), PluralCategory::Other);
+        assert_eq!(determine_plural_category(None, "en"), PluralCategory::Other);
+        assert_eq!(
+            determine_plural_category(Some(1.0), "en"),
+            PluralCategory::One
+        );
+        assert_eq!(
+            determine_plural_category(Some(0.0), "en"),
+            PluralCategory::Other
+        );
+        assert_eq!(
+            determine_plural_category(Some(0.0), "fr"),
+            PluralCategory::One
+        );
+        assert_eq!(
+            determine_plural_category(Some(2.0), "pl"),
+            PluralCategory::Few
+        );
     }
 
     #[test]
     fn resolve_entry_from_group_plural() {
         let group = group_with_plural();
         assert_eq!(
-            resolve_entry_from_group(&group, "items", Some(1.0), &HashMap::new()),
+            resolve_entry_from_group(&group, "items", "en", Some(1.0), &HashMap::new()),
             Some("1 item".to_string())
         );
         assert_eq!(
-            resolve_entry_from_group(&group, "items", Some(2.0), &HashMap::new()),
+            resolve_entry_from_group(&group, "items", "en", Some(2.0), &HashMap::new()),
             Some("2 items".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_entry_from_group_french_zero_selects_one() {
+        let group = group_with_all_plural_forms();
+        assert_eq!(
+            resolve_entry_from_group(&group, "items", "fr", Some(0.0), &HashMap::new()),
+            Some("FORM:one".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_entry_from_group_falls_back_to_other_when_category_missing() {
+        let mut entries = HashMap::new();
+        entries.insert(
+            "items".to_string(),
+            serde_json::json!({"other": "FORM:other-only"}),
+        );
+        let group = TranslationGroup {
+            entries,
+            ..Default::default()
+        };
+        assert_eq!(
+            resolve_entry_from_group(&group, "items", "ar", Some(2.0), &HashMap::new()),
+            Some("FORM:other-only".to_string())
         );
     }
 }

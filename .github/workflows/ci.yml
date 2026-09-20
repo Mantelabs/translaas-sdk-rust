@@ -37,10 +37,10 @@ jobs:
         run: cargo metadata --no-deps --format-version 1
 
       - name: Check
-        run: cargo check --workspace --all-targets --locked
+        run: cargo check --workspace --all-targets --locked --features cache,offline,service,axum,blocking
 
       - name: Test
-        run: cargo test --workspace --locked
+        run: cargo test --workspace --locked --features cache,offline,service,axum,blocking
 
   lint:
     name: Lint

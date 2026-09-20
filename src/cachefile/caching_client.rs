@@ -179,6 +179,7 @@ where
         Ok(resolve_entry_from_group(
             &group_data,
             entry,
+            lang,
             opts.number,
             &opts.parameters,
         ))
