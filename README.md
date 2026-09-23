@@ -207,7 +207,7 @@ let text = client
 
 Intercepted reads: `get_entry`, `get_group`, `get_project`, `get_project_locales`. Passthrough (always inner): `get_offline_cache`, `report_missing_keys`, `validate_api_key`.
 
-Offline entry resolution uses **CLDR cardinal** rules via ICU4X (`icu_plurals` 2.2) for `(n, lang)` — the same six categories as the live API (`zero` / `one` / `two` / `few` / `many` / `other`) — plus `{param}` substitution. Live HTTP `get_entry` still sends `n` and lets the server select. Runnable demo: [`examples/rust/offline`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/offline) (sync + `CacheOnly` reads).
+Offline entry resolution uses **CLDR cardinal** rules via ICU4X (`icu_plurals` 2.2) for `(n, lang)` — the same six categories as the live API (`zero` / `one` / `two` / `few` / `many` / `other`) — plus `{param}` substitution. Live HTTP `get_entry` still sends `n` and lets the server select. Runnable demo: [`rust/offline`](https://github.com/Mantelabs/translaas-sdk-examples/tree/main/rust/offline) in [translaas-sdk-examples](https://github.com/Mantelabs/translaas-sdk-examples) (sync + `CacheOnly` reads).
 
 For **keyless offline-only** deployments, pair `FallbackMode::CacheOnly` with [`OfflineStubClient`](src/cachefile/offline_stub.rs) after seeding disk:
 
@@ -607,7 +607,7 @@ Runnable sample apps live in the meta-repo under [`examples/rust/`](https://gith
 |--------|--------|---------|
 | [`basic/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/basic) | Available | Console quickstart — fetch a translation with `service::t()` |
 | [`blocking/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/blocking) | Available | Sync console quickstart — no Tokio in the app manifest |
-| [`offline/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/offline) | Available | Sync to disk, cache-only `get_entry`; offline plural selection via CLDR for `(n, lang)` |
+| [`offline/`](https://github.com/Mantelabs/translaas-sdk-examples/tree/main/rust/offline) | Available | Sync to disk, cache-only `get_entry`; offline plural selection via CLDR for `(n, lang)` |
 | [`axum/`](https://github.com/Mantelabs/translaas-all/tree/main/examples/rust/axum) | Available | Axum installer + `Translaas` extractor |
 
 ## CI
