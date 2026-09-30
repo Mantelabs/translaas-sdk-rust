@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-30
+
 ### Changed
 
 - Offline cache `get_entry` selects CLDR cardinal plural forms for `(n, lang)` via ICU4X (`icu_plurals` / `icu_locale` **2.2.0** compiled data) instead of the English-like `n == 1` heuristic. Missing selected forms still fall back to `other`. Live HTTP `get_entry` is unchanged (the server still applies locale rules from query `n`).
