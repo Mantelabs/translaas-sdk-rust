@@ -534,7 +534,7 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 
 | Rust SDK | .NET SDK | Go SDK | Delivery API | Notes |
 |----------|----------|--------|--------------|-------|
-| `0.4.1` | `0.5.0` | `v0.5.0-beta` | `/sdk/v1` + `/api/v1/api-keys/validate` | Offline CLDR plural selection |
+| `0.4.1` | `0.5.0` | `v0.5.0` | `/sdk/v1` + `/api/v1/api-keys/validate` | Offline CLDR plural selection |
 | `0.4.0` | `v0.4.1-beta` | `v0.4.0` | `/sdk/v1` + `/api/v1/api-keys/validate` | M4 parity: client, cache, offline, `t()`, axum |
 | (future) `v0.3.0-beta` | — | `v0.3.0-beta` | same | Offline + sync |
 | (future) `v0.2.0-beta` | — | `v0.2.0-beta` | same | In-memory `CacheMode` |
