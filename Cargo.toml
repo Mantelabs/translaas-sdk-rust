@@ -2,7 +2,7 @@
 name = "translaas"
 version = "0.4.1"
 edition = "2021"
-rust-version = "1.86"
+rust-version = "1.88"
 license = "MIT"
 authors = ["Translaas SDK Contributors"]
 repository = "https://github.com/Mantelabs/translaas-sdk-rust"

@@ -16,29 +16,30 @@ permissions:
 
 jobs:
   msrv:
-    name: MSRV (1.86)
+    name: MSRV (1.88)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Rust 1.86.0
+      - name: Install Rust 1.88.0
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.86.0
+          toolchain: 1.88.0
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: msrv-1.86
+          shared-key: msrv-1.88
           cache-on-failure: true
 
       - name: Metadata
         run: cargo metadata --no-deps --format-version 1
 
       - name: Check
-        # Default features only: `offline` pulls zip 8.x (rust-version 1.88) so it cannot
-        # compile on MSRV 1.86. ICU4X 2.2.0 for plurals is locked to match this MSRV.
+        # Default features only. `offline` is covered on stable.
+        # MSRV is 1.88 because icu_plurals 2.3 unifies icu_provider and icu_locale_core
+        # to 2.3 (also linked from url/idna), and those crates require rustc 1.88.
         run: cargo check --workspace --all-targets --locked
 
       - name: Test
