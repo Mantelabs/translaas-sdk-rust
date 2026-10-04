@@ -5,7 +5,7 @@ Official Translaas client SDK for Rust ([`translaas` on crates.io](https://crate
 | | |
 |---|---|
 | **Status** | M4 parity (`0.4.1`) — live HTTP, in-memory cache, offline file cache, `service`, axum, opt-in `blocking` |
-| **MSRV** | Rust **1.86+** |
+| **MSRV** | Rust **1.88+** |
 | **License** | MIT |
 
 Part of the [translaas-all](https://github.com/Mantelabs/translaas-all) umbrella workspace (local path `sdk/rust`).
@@ -53,7 +53,7 @@ Enable additional layers with Cargo features: `offline`, `axum`, `blocking` (see
 - [crates.io/translaas](https://crates.io/crates/translaas)
 - [docs.rs/translaas](https://docs.rs/translaas)
 
-Requires Rust **1.86+**. Async [`Client`](src/client/mod.rs) methods need a runtime (Tokio recommended). Feature `blocking` drives reqwest internally — do **not** add `tokio` to the application `Cargo.toml` for that path, and do **not** call blocking APIs from async tasks.
+Requires Rust **1.88+**. Async [`Client`](src/client/mod.rs) methods need a runtime (Tokio recommended). Feature `blocking` drives reqwest internally — do **not** add `tokio` to the application `Cargo.toml` for that path, and do **not** call blocking APIs from async tasks.
 
 Maintainers: see [CONTRIBUTING.md § Releasing](./CONTRIBUTING.md#releasing).
 
@@ -207,7 +207,7 @@ let text = client
 
 Intercepted reads: `get_entry`, `get_group`, `get_project`, `get_project_locales`. Passthrough (always inner): `get_offline_cache`, `report_missing_keys`, `validate_api_key`.
 
-Offline entry resolution uses **CLDR cardinal** rules via ICU4X (`icu_plurals` 2.2) for `(n, lang)` — the same six categories as the live API (`zero` / `one` / `two` / `few` / `many` / `other`) — plus `{param}` substitution. Live HTTP `get_entry` still sends `n` and lets the server select. Runnable demo: [`rust/offline`](https://github.com/Mantelabs/translaas-sdk-examples/tree/main/rust/offline) in [translaas-sdk-examples](https://github.com/Mantelabs/translaas-sdk-examples) (sync + `CacheOnly` reads).
+Offline entry resolution uses **CLDR cardinal** rules via ICU4X (`icu_plurals` 2.3) for `(n, lang)` — the same six categories as the live API (`zero` / `one` / `two` / `few` / `many` / `other`) — plus `{param}` substitution. Live HTTP `get_entry` still sends `n` and lets the server select. Runnable demo: [`rust/offline`](https://github.com/Mantelabs/translaas-sdk-examples/tree/main/rust/offline) in [translaas-sdk-examples](https://github.com/Mantelabs/translaas-sdk-examples) (sync + `CacheOnly` reads).
 
 For **keyless offline-only** deployments, pair `FallbackMode::CacheOnly` with [`OfflineStubClient`](src/cachefile/offline_stub.rs) after seeding disk:
 
@@ -547,7 +547,7 @@ See also: [`examples/rust/blocking`](https://github.com/Mantelabs/translaas-all/
 | Feature | Default | Purpose |
 |---------|---------|---------|
 | `cache` | yes | In-memory cache layer (`translaas::cache`) |
-| `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache`. Pulls ICU4X `icu_plurals` / `icu_locale` 2.2 compiled CLDR data. |
+| `offline` | no | On-disk / hybrid cache (`translaas::cachefile`); implies `cache`. Pulls ICU4X `icu_plurals` 2.3 / `icu_locale` 2.2 compiled CLDR data. |
 | `service` | **yes** | Convenience `t()` helper (`translaas::service`) |
 | `axum` | no | Axum installer (`add_translaas`), extractors, and middleware; implies `service` |
 | `blocking` | no | Sync `translaas::blocking` façade; implies `service`. Internal Tokio runtime — no consumer `tokio` dep. Do not call from async tasks. |
@@ -567,7 +567,7 @@ translaas = { version = "=0.4.1", default-features = false, features = ["cache"]
 
 ## Development
 
-Requires [Rust](https://rustup.rs/) 1.86+ and optionally [`just`](https://github.com/casey/just).
+Requires [Rust](https://rustup.rs/) 1.88+ and optionally [`just`](https://github.com/casey/just).
 
 ```powershell
 # From sdk/rust (or this repository root)
@@ -613,6 +613,6 @@ Runnable sample apps live in the meta-repo under [`examples/rust/`](https://gith
 
 ## CI
 
-GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.86.0** in a dedicated job.
+GitHub Actions runs on **Ubuntu** and **Windows**: format, clippy (`-D warnings`), tests (feature matrix), and build. MSRV is pinned to **1.88.0** in a dedicated job.
 
 Tag-driven releases use [`.github/workflows/release.yml`](./.github/workflows/release.yml) — the same quality bar as CI, plus `cargo publish` to crates.io and a GitHub Release from `CHANGELOG.md`. See [CONTRIBUTING.md § Releasing](./CONTRIBUTING.md#releasing).

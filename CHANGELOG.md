@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- MSRV raised to **1.88**. `icu_plurals` **2.3.0** pulls ICU4X 2.3 crates that `url` also links, and those crates require Rust 1.88.
+
 ## [0.4.1] - 2026-09-30
 
 ### Changed
