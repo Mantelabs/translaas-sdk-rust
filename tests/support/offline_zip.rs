@@ -7,7 +7,7 @@ use std::io::{Cursor, Write};
 
 use chrono::Utc;
 use serde_json::{json, Value};
-use zip::write::{FileOptions, ZipWriter};
+use zip::write::{SimpleFileOptions, ZipWriter};
 use zip::CompressionMethod;
 
 type ZipWriterCursor = ZipWriter<Cursor<Vec<u8>>>;
@@ -98,8 +98,7 @@ pub fn write_zip_entry(
     name: &str,
     payload: &[u8],
 ) -> Result<(), zip::result::ZipError> {
-    let options: FileOptions<'_, ()> =
-        FileOptions::default().compression_method(CompressionMethod::Stored);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
     writer.start_file(name, options)?;
     writer.write_all(payload)?;
     Ok(())
