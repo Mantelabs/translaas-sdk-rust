@@ -42,7 +42,11 @@ pub fn parse_offline_zip(content: &[u8]) -> Result<OfflineBundle, OfflineCacheEr
         let mut entry = archive
             .by_index(index)
             .map_err(|err| zip_parse_err("invalid offline ZIP archive", Some(Box::new(err))))?;
-        let name = entry.name().to_string();
+        // zip 9+ decodes entry names lazily and returns Result for invalid UTF-8.
+        let name = entry
+            .name()
+            .map_err(|err| zip_parse_err("invalid ZIP entry name", Some(Box::new(err))))?
+            .into_owned();
 
         if let Err(reason) = validate_zip_entry_name(&name) {
             return Err(zip_parse_err(
